@@ -14,6 +14,11 @@
         <div class="info">
           <div class="n">{{ a.activity_name }}{% if a.id in my_ids %} <span class="badge st-done" style="margin-left:6px">Katılıyorsunuz</span>{% endif %}</div>
           <div class="meta">{{ a.activity_date|date:"l, H:i" }}{% if a.location %}, {{ a.location }}{% endif %}</div>
+          <div class="chips" style="margin-top:4px;gap:6px">
+            <span class="chip{% if a.activity_type != 'OTHER' %} cert{% endif %}" style="font-size:12px;padding:1px 8px">{{ a.get_activity_type_display }}</span>
+            <span class="perm-badge badge" style="font-size:12px">{{ a.get_participation_type_display }}</span>
+            {% if a.contact_person %}<span class="muted" style="font-size:12px;align-self:center">İletişim: {{ a.contact_person.display_name }}</span>{% endif %}
+          </div>
           {% if a.activity_description %}<div style="font-size:13px;color:var(--ink-2);margin-top:2px">{{ a.activity_description }}</div>{% endif %}
         </div>
         <div class="avatars" style="margin-right:6px">{% for u in a.attendees.all|slice:":5" %}<span class="avatar" title="{{ u.display_name }}">{{ u.initials }}</span>{% endfor %}</div>
@@ -28,7 +33,7 @@
     <div class="panel-head"><h2>Geçmiş etkinlikler</h2></div>
     <div class="panel-body">
       <ul class="list">
-        {% for a in past %}<li id="activity-{{ a.pk }}"><span class="title">{{ a.activity_name }}</span><span class="muted" style="font-size:12px;white-space:nowrap">{{ a.activity_date|date:"j M" }}</span></li>
+        {% for a in past %}<li id="activity-{{ a.pk }}"><span class="title">{{ a.activity_name }}</span><span class="perm-badge badge" style="font-size:11px">{{ a.get_activity_type_display }}</span><span class="muted" style="font-size:12px;white-space:nowrap">{{ a.activity_date|date:"j M" }}</span></li>
         {% empty %}<li class="empty">Geçmiş etkinlik yok.</li>{% endfor %}
       </ul>
     </div>

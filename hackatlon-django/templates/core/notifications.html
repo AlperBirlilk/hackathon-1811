@@ -1,0 +1,39 @@
+{% extends "app.html" %}
+{% block title %}Bildirimler{% endblock %}
+{% block heading %}Bildirimler{% endblock %}
+{% block subheading %}<div class="sub">{% if unread_notifications %}{{ unread_notifications }} okunmamış bildirim{% else %}Tüm bildirimler okundu{% endif %}</div>{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:820px">
+  <div class="panel-head"><h2>Son bildirimler</h2>
+    <div class="actions">
+      {% if unread_notifications %}
+      <form method="post" action="{% url 'notification_read_all' %}" class="inline-form">{% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'notification_list' %}">
+        <button class="btn sm ghost">Tümünü okundu işaretle</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  <div class="panel-body flush">
+    <ul class="feed">
+      {% for n in notifications %}
+      <li{% if not n.is_read %} style="background:var(--accent-soft)"{% endif %}>
+        <div class="body">
+          <form method="post" action="{% url 'notification_read' n.pk %}">{% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'notification_list' %}">
+            <button type="submit" class="what" style="background:none;border:0;padding:0;font:inherit;text-align:left;cursor:pointer;width:100%">
+              {% if n.is_read %}{{ n.message }}{% else %}<strong>{{ n.message }}</strong>{% endif %}
+              {% if n.task %}<span class="code muted" style="margin-left:6px">{{ n.task.code }}</span>{% endif %}
+              {% if not n.is_read %}<span class="badge st-in_progress" style="margin-left:8px">Yeni</span>{% endif %}
+            </button>
+          </form>
+        </div>
+        <span class="when" title="{{ n.create_date|date:'d.m.Y H:i' }}">{{ n.create_date|timesince }} önce</span>
+      </li>
+      {% empty %}
+      <li class="empty">Henüz bildiriminiz yok.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

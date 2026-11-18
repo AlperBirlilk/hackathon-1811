@@ -1,4 +1,4 @@
-from .models import PermissionType
+from .models import Notification, PermissionType
 
 
 def portal(request):
@@ -13,4 +13,5 @@ def portal(request):
             'report': user.has_portal_perm(PermissionType.REPORT_ANALYSIS),
             'data': user.has_portal_perm(PermissionType.DATA_ACCESS),
         },
+        'unread_notifications': Notification.objects.filter(user=user, is_read=False).count(),
     }
