@@ -1,0 +1,21 @@
+{% extends "app.html" %}
+{% block title %}Yeni task{% endblock %}
+{% block heading %}Yeni task{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:820px">
+  <div class="panel-body" style="padding:20px">
+    <form method="post">{% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="form-grid">
+        {% include "_field.html" with field=form.title full=1 %}
+        {% include "_field.html" with field=form.description full=1 %}
+        {% include "_field.html" with field=form.severity %}
+        {% include "_field.html" with field=form.status %}
+        {% include "_field.html" with field=form.assignees full=1 %}
+      </div>
+      <p class="hint">Birden fazla kişi seçmek için Ctrl tuşuna basılı tutun.</p>
+      <div class="page-actions"><a class="btn ghost" href="{% url 'task_list' %}">Vazgeç</a><button class="btn">Task oluştur</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

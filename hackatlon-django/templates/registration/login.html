@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Giriş{% endblock %}
+{% block body %}
+{% include "_theme_toggle.html" with corner=1 %}
+<main class="auth">
+  <div class="auth-box">
+    <div class="auth-head">
+      <span style="color:var(--accent)">{% include "_brand_mark.html" %}</span>
+      <h1>Operasyon Portalı</h1>
+      <p>Kurumsal kullanıcı adınız ve parolanızla giriş yapın.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-body">
+        {% if form.non_field_errors %}
+          <div class="alert" role="alert">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <div class="field">
+            <label for="id_username">Kullanıcı adı</label>
+            <input type="text" name="username" id="id_username" value="{{ form.username.value|default:'' }}"
+                   autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus maxlength="150" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="field">
+            <label for="id_password">Parola</label>
+            <input type="password" name="password" id="id_password" autocomplete="current-password" required {% if locked %}disabled{% endif %}>
+          </div>
+          <input type="hidden" name="next" value="{{ next }}">
+          <button class="btn block" type="submit" {% if locked %}disabled{% endif %}>Giriş yap</button>
+        </form>
+      </div>
+    </div>
+    <p class="auth-foot">Giriş kurumsal dizin (LDAP) üzerinden doğrulanır.</p>
+  </div>
+</main>
+{% endblock %}

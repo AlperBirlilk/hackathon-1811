@@ -1,0 +1,20 @@
+{% extends "app.html" %}
+{% block title %}Yeni etkinlik{% endblock %}
+{% block heading %}Yeni etkinlik{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:820px">
+  <div class="panel-body" style="padding:20px">
+    <form method="post">{% csrf_token %}
+      <div class="form-grid">
+        {% include "_field.html" with field=form.activity_name full=1 %}
+        {% include "_field.html" with field=form.activity_description full=1 %}
+        {% include "_field.html" with field=form.activity_date %}
+        {% include "_field.html" with field=form.location %}
+        {% include "_field.html" with field=form.attendees full=1 %}
+      </div>
+      <p class="hint">Birden fazla kişi seçmek için Ctrl tuşuna basılı tutun.</p>
+      <div class="page-actions"><a class="btn ghost" href="{% url 'activity_list' %}">Vazgeç</a><button class="btn">Etkinlik oluştur</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}
