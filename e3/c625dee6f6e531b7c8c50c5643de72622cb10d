@@ -1,0 +1,142 @@
+hackatlon-be/.idea/.gitignore
+  h_31d152b14e4250 1-5
+hackatlon-be/.idea/misc.xml
+  h_31d152b14e4250 1-12
+hackatlon-be/.idea/vcs.xml
+  h_31d152b14e4250 1-6
+hackatlon-be/.mvn/wrapper/maven-wrapper.properties
+  h_31d152b14e4250 1-3
+hackatlon-be/HELP.md
+  h_31d152b14e4250 1-28
+hackatlon-be/mvnw
+  h_31d152b14e4250 1-295
+hackatlon-be/mvnw.cmd
+  h_31d152b14e4250 1-189
+hackatlon-be/pom.xml
+  h_31d152b14e4250 1-64
+hackatlon-be/src/main/java/com/example/demo/DemoApplication.java
+  h_31d152b14e4250 1-13
+hackatlon-be/src/main/resources/application.properties
+  h_31d152b14e4250 1
+hackatlon-be/src/test/java/com/example/demo/DemoApplicationTests.java
+  h_31d152b14e4250 1-13
+hackatlon-be/target/classes/application.properties
+  h_31d152b14e4250 1
+hackatlon-be/target/maven-archiver/pom.properties
+  h_31d152b14e4250 1-3
+hackatlon-be/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+  h_31d152b14e4250 1
+hackatlon-be/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
+  h_31d152b14e4250 1
+hackatlon-be/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst
+  h_31d152b14e4250 1
+hackatlon-be/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst
+  h_31d152b14e4250 1
+hackatlon-be/target/surefire-reports/2026-11-18T13-41-23_757.dumpstream
+  h_31d152b14e4250 1-5
+hackatlon-be/target/surefire-reports/2026-11-18T13-42-03_005.dumpstream
+  h_31d152b14e4250 1-5
+hackatlon-be/target/surefire-reports/TEST-com.example.demo.DemoApplicationTests.xml
+  h_31d152b14e4250 1-104
+hackatlon-be/target/surefire-reports/com.example.demo.DemoApplicationTests.txt
+  h_31d152b14e4250 1-4
+hackatlon-django/.claude/settings.json
+  h_31d152b14e4250 1-5
+hackatlon-django/.gitignore
+  h_31d152b14e4250 1-57
+hackatlon-django/README.md
+  h_31d152b14e4250 1-78
+hackatlon-django/config/asgi.py
+  h_31d152b14e4250 1-16
+hackatlon-django/config/settings.py
+  h_31d152b14e4250 1-133
+hackatlon-django/config/urls.py
+  h_31d152b14e4250 1-7
+hackatlon-django/config/wsgi.py
+  h_31d152b14e4250 1-16
+hackatlon-django/core/admin.py
+  h_31d152b14e4250 1-54
+hackatlon-django/core/apps.py
+  h_31d152b14e4250 1-6
+hackatlon-django/core/context_processors.py
+  h_31d152b14e4250 1-16
+hackatlon-django/core/forms.py
+  h_31d152b14e4250 1-56
+hackatlon-django/core/ldap_backend.py
+  h_31d152b14e4250 1-120
+hackatlon-django/core/management/commands/grant_perm.py
+  h_31d152b14e4250 1-30
+hackatlon-django/core/management/commands/seed.py
+  h_31d152b14e4250 1-136
+hackatlon-django/core/migrations/0001_initial.py
+  h_31d152b14e4250 1-147
+hackatlon-django/core/migrations/0002_user_auth_source.py
+  h_31d152b14e4250 1-23
+hackatlon-django/core/models.py
+  h_31d152b14e4250 1-230
+hackatlon-django/core/services.py
+  h_31d152b14e4250 1-76
+hackatlon-django/core/tests.py
+  h_31d152b14e4250 1-145
+hackatlon-django/core/urls.py
+  h_31d152b14e4250 1-30
+hackatlon-django/core/views.py
+  h_31d152b14e4250 1-380
+hackatlon-django/main.py
+  h_31d152b14e4250 1-16
+hackatlon-django/manage.py
+  h_31d152b14e4250 1-22
+hackatlon-django/requirements.txt
+  h_31d152b14e4250 1-7
+hackatlon-django/static/css/portal.css
+  h_31d152b14e4250 1-340
+hackatlon-django/static/js/portal.js
+  h_31d152b14e4250 1-43
+hackatlon-django/templates/403.html
+  h_31d152b14e4250 1-11
+hackatlon-django/templates/404.html
+  h_31d152b14e4250 1-11
+hackatlon-django/templates/_brand_mark.html
+  h_31d152b14e4250 1
+hackatlon-django/templates/_field.html
+  h_31d152b14e4250 1-5
+hackatlon-django/templates/_theme_toggle.html
+  h_31d152b14e4250 1-4
+hackatlon-django/templates/app.html
+  h_31d152b14e4250 1-71
+hackatlon-django/templates/base.html
+  h_31d152b14e4250 1-25
+hackatlon-django/templates/core/activity_form.html
+  h_31d152b14e4250 1-20
+hackatlon-django/templates/core/activity_list.html
+  h_31d152b14e4250 1-37
+hackatlon-django/templates/core/dashboard.html
+  h_31d152b14e4250 1-125
+hackatlon-django/templates/core/data_sharing.html
+  h_31d152b14e4250 1-11
+hackatlon-django/templates/core/member_permissions.html
+  h_31d152b14e4250 1-21
+hackatlon-django/templates/core/profile.html
+  h_31d152b14e4250 1-81
+hackatlon-django/templates/core/task_detail.html
+  h_31d152b14e4250 1-64
+hackatlon-django/templates/core/task_form.html
+  h_31d152b14e4250 1-21
+hackatlon-django/templates/core/task_list.html
+  h_31d152b14e4250 1-40
+hackatlon-django/templates/core/team.html
+  h_31d152b14e4250 1-46
+hackatlon-django/templates/registration/login.html
+  h_31d152b14e4250 1-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e3c625dee6f6e531b7c8c50c5643de72622cb10d",
+  "prompts": {},
+  "humans": {
+    "h_31d152b14e4250": {
+      "author": "TURKCELL\\TCALBIRLIK <alper.birlik@turkcell.com.tr>"
+    }
+  }
+}
