@@ -1,0 +1,75 @@
+.claude/agents/code-reviewer.md
+  s_34403755e3bf15::t_9af5beeb6f583d 1-23
+.claude/agents/django-dev.md
+  s_34403755e3bf15::t_fe1d7748aab53f 1-22
+.claude/agents/qa-demo.md
+  s_34403755e3bf15::t_0ea46a93a91e31 1-33
+.claude/agents/security-reviewer.md
+  s_34403755e3bf15::t_a357bc8c47b025 1-24
+.claude/agents/template-dev.md
+  s_34403755e3bf15::t_0b8106aa792e65 1-21
+.claude/rules/django.md
+  s_34403755e3bf15::t_a89cbc8fd5ef75 1-16
+.claude/rules/security.md
+  s_34403755e3bf15::t_a28d73b484095f 1-12
+.claude/rules/templates.md
+  s_34403755e3bf15::t_daf99d07c58942 1-16
+.claude/settings.json
+  s_34403755e3bf15::t_df2310723e39da 2,5-30
+.claude/skills/demo-check/SKILL.md
+  s_34403755e3bf15::t_cc5d00c8b0676c 1-23
+.claude/skills/new-api-endpoint/SKILL.md
+  s_34403755e3bf15::t_f56d813ffc1eb4 1-36
+.claude/skills/new-page/SKILL.md
+  s_34403755e3bf15::t_e7a9ec7237ced9 1-25
+.claude/skills/task-change/SKILL.md
+  s_34403755e3bf15::t_4ab5b2dea2bd2b 1-19
+.gitignore
+  s_34403755e3bf15::t_1e7351131adee4 1-12,15-23,25-28,30-35,37,39-40
+.mcp.json.example
+  s_34403755e3bf15::t_1a4cee6d7514c1 1-12
+CLAUDE.md
+  s_34403755e3bf15::t_b85c64889c21cd 1-46
+docs/api-contract.md
+  s_34403755e3bf15::t_f08cf4dbfe4932 1-174
+docs/claude_setup_plan.md
+  s_34403755e3bf15::t_ca79ca2f548799 1-136
+docs/minimum_requirements.md
+  s_34403755e3bf15::t_be4d40c003a932 1-9
+docs/plan_alper.md
+  s_34403755e3bf15::t_3e700d546fc6e3 1-229
+docs/project_plan.md
+  s_34403755e3bf15::t_5412b39e585388 1-93
+docs/team_decisions.md
+  s_34403755e3bf15::t_d8f9aad0f0a0f3 1-10
+hackatlon-django/CLAUDE.md
+  s_34403755e3bf15::t_3c783cab9f6b13 1-49
+hackatlon-django/core/models.py
+  s_34403755e3bf15::t_419c785c3a6529 2
+mcp/CLAUDE.md
+  s_34403755e3bf15::t_0223cb6b60de9f 1-17
+mcp/README.md
+  s_34403755e3bf15::t_5f52284d40cb57 1-65
+mcp/pyproject.toml
+  s_34403755e3bf15::t_f791c530eb44ef 1-9
+mcp/server.py
+  s_34403755e3bf15::t_311b60de83874a 1-262
+mcp/uv.lock
+  s_34403755e3bf15::t_557977444adc18 1-1067
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1915a9c89b749eee3215820dee8899a65751e568",
+  "prompts": {},
+  "sessions": {
+    "s_34403755e3bf15": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_34403755e3bf15",
+        "model": "unknown"
+      },
+      "human_author": "TURKCELL\\TCALBIRLIK <alper.birlik@turkcell.com.tr>"
+    }
+  }
+}
