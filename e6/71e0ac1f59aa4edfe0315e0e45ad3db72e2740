@@ -1,0 +1,31 @@
+hackatlon-django/config/settings.py
+  s_f5004e150afc2c::t_8a52f3f789e1b1 26-27
+hackatlon-django/core/management/commands/seed.py
+  s_f5004e150afc2c::t_ff2d9c43cb1b19 19,22-27,29,31,33-34,36,39,42,44,46,48,50,52,54,56,58,60,63,66,68,70,73-75,77,99,108-109,111-112,120-123,129-130,132-133,136-137,144-153
+hackatlon-django/core/migrations/0003_task_due_backup_leave_activity_notification.py
+  s_f5004e150afc2c::t_21d359fbf827ea 1-79
+hackatlon-django/core/models.py
+  s_f5004e150afc2c::t_d3130acc835a47 5-6,10,57,94-101,166-167,174-178,200-208,218-219,226-227,247-255,260-266,279-296
+hackatlon-django/core/services.py
+  s_f5004e150afc2c::t_66bccb14b26bb1 13-14,20-21
+hackatlon-django/core/tests.py
+  s_f5004e150afc2c::t_60e4196467ae74 139-145
+hackatlon-django/requirements.txt
+  s_f5004e150afc2c::t_b15874be80db8f 2,4-5,7-8,10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e671e0ac1f59aa4edfe0315e0e45ad3db72e2740",
+  "prompts": {},
+  "sessions": {
+    "s_f5004e150afc2c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_f5004e150afc2c",
+        "model": "unknown"
+      },
+      "human_author": "TURKCELL\\TCALBIRLIK <alper.birlik@turkcell.com.tr>"
+    }
+  }
+}
