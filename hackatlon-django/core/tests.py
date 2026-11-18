@@ -136,7 +136,13 @@ class PageRenderTests(TestCase):
     def test_manager_pages(self):
         self._get_all('yonetici', lambda m: [('/team/', 200), (f'/team/{m.pk}/permissions/', 200),
                                              (f'/profile/{m.pk}/', 200), ('/activities/new/', 200),
-                                             ('/data-sharing/', 200)])
+                                             ('/data-sharing/', 403)])   # yonetici'de DATA_ACCESS yok
+
+    def test_director_pages(self):
+        self._get_all('direktor', lambda m: [('/team/', 200), ('/data-sharing/', 200),
+                                             ('/activities/new/', 200)])
+        self.assertTrue(User.objects.get(username='direktor').is_director)
+        self.assertFalse(User.objects.get(username='yonetici').is_director)
 
     def test_member_pages(self):
         self._get_all('mert', lambda m: [('/team/', 403), ('/activities/new/', 403), ('/data-sharing/', 200)])

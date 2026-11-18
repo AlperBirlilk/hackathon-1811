@@ -10,12 +10,15 @@ def _names(users):
 
 
 @transaction.atomic
-def create_task(*, user, title, description, severity, status, assignees):
+def create_task(*, user, title, description, severity, status, assignees,
+                due_date=None, backup_assignee=None):
     task = Task.objects.create(
         task_title=title,
         task_description=description,
         task_severity=severity,
         task_status=status,
+        due_date=due_date or Task.sla_due_date(severity),
+        backup_assignee=backup_assignee,
         created_by=user,
         modified_by=user,
     )
