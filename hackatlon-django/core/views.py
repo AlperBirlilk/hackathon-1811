@@ -105,6 +105,42 @@ def overdue_q():
     return Q(task_status__in=Task.PENDING_STATUSES, due_date__lt=timezone.now())
 
 
+def can_manage_member(caller, target):
+    """Ekibe alma / yetki düzenleme izni (hiyerarşi koruması).
+
+    Kimse kendini yönetemez; superuser'ı yalnızca superuser yönetir. Direktör herkesi yönetir.
+    Direktör olmayan biri direktörleri ve kendi yönetici zincirindeki kişileri (üstlerini) yönetemez.
+    """
+    if target.pk == caller.pk or (target.is_superuser and not caller.is_superuser):
+        return False
+    if caller.is_director:
+        return True
+    if target.is_director:
+        return False
+    boss, seen = caller.manager, set()
+    while boss is not None and boss.pk not in seen:
+        if boss.pk == target.pk:
+            return False
+        seen.add(boss.pk)
+        boss = boss.manager
+    return True
+
+
+def restrict_task_form(form, user, task=None):
+    """TASK_MANAGEMENT yoksa: yalnızca kendini atayabilir; mevcut atananları/yedeği koruyabilir
+    veya kaldırabilir ama başka birini ekleyemez (task_create ile aynı kural, düzenlemede de)."""
+    if user.has_portal_perm(PermissionType.TASK_MANAGEMENT):
+        return
+    allowed = Q(pk=user.pk)
+    if task is not None:
+        allowed |= Q(pk__in=task.assignees.values('pk'))
+    form.fields['assignees'].queryset = User.objects.filter(allowed, is_active=True).order_by('first_name')
+    if task is not None and task.backup_assignee_id:
+        form.fields['backup_assignee'].queryset = User.objects.filter(pk=task.backup_assignee_id)
+    else:
+        del form.fields['backup_assignee']
+
+
 def team_queryset_for(user):
     """Ekibim: direktör (tüm yetkiler) herkesi, yönetici kendi ekibini görür."""
     if user.is_director:
@@ -254,11 +290,8 @@ def task_list(request):
 @login_required
 def task_create(request):
     form = TaskForm(request.POST or None, initial={'assignees': [request.user.pk]})
-    if not request.user.has_portal_perm(PermissionType.TASK_MANAGEMENT):
-        # Yetkisi olmayan kullanıcı yalnızca kendine task açabilir
-        form.fields['assignees'].queryset = User.objects.filter(pk=request.user.pk)
-        # ...ve yedek sorumlu atayamaz
-        del form.fields['backup_assignee']
+    # Yetkisi olmayan kullanıcı yalnızca kendine task açabilir ve yedek atayamaz
+    restrict_task_form(form, request.user)
     if request.method == 'POST' and form.is_valid():
         d = form.cleaned_data
         task = services.create_task(
@@ -294,13 +327,14 @@ def task_detail(request, pk):
             'backup_assignee': task.backup_assignee_id,
         }
         form = TaskForm(request.POST or None, initial=initial)
+        restrict_task_form(form, request.user, task)
         if request.method == 'POST' and form.is_valid():
             d = form.cleaned_data
-            changed = services.update_task(
-                task, user=request.user, title=d['title'], description=d['description'],
-                severity=d['severity'], status=d['status'], assignees=list(d['assignees']),
-                due_date=d['due_date'], backup_assignee=d['backup_assignee'],
-            )
+            changes = dict(title=d['title'], description=d['description'], severity=d['severity'],
+                           status=d['status'], assignees=list(d['assignees']), due_date=d['due_date'])
+            if 'backup_assignee' in form.fields:
+                changes['backup_assignee'] = d['backup_assignee']
+            changed = services.update_task(task, user=request.user, **changes)
             messages.success(request, 'Task güncellendi.' if changed else 'Değişiklik yok.')
             return redirect('task_detail', pk=task.pk)
     elif request.method == 'POST':
@@ -354,6 +388,10 @@ def task_bulk(request):
     if (not ids or kind not in BULK_LABELS or (kind in valid and value not in valid[kind])
             or (kind in ('assign', 'unassign') and target is None)):
         messages.error(request, 'Toplu işlem için en az bir task ve geçerli bir işlem seçin.')
+        return safe_next(request, 'task_list')
+    if kind in ('assign', 'unassign') and not user.has_portal_perm(PermissionType.TASK_MANAGEMENT):
+        # Atama kısıtı task_create / task_detail ile aynı: başkasını yalnızca Task Management atayabilir
+        messages.error(request, 'Kişi ekleme/çıkarma için Task Management yetkisi gerekir.')
         return safe_next(request, 'task_list')
 
     changed = skipped = 0
@@ -425,8 +463,9 @@ def activity_toggle_join(request, pk):
 
 @portal_perm_required(PermissionType.ROLE_MANAGEMENT)
 def team(request):
-    candidates = (User.objects.filter(is_active=True, manager__isnull=True)
-                  .exclude(pk=request.user.pk).order_by('first_name'))
+    candidates = [u for u in User.objects.filter(is_active=True, manager__isnull=True)
+                  .exclude(pk=request.user.pk).prefetch_related('permissions').order_by('first_name')
+                  if can_manage_member(request.user, u)]
     return render(request, 'core/team.html', {
         'team': team_with_stats(request.user).prefetch_related('permissions'),
         'candidates': candidates,
@@ -437,8 +476,8 @@ def team(request):
 @require_POST
 def team_add(request):
     member = get_object_or_404(User, pk=request.POST.get('user_id'), is_active=True, manager__isnull=True)
-    if member.pk == request.user.pk:
-        raise PermissionDenied
+    if not can_manage_member(request.user, member):
+        raise PermissionDenied   # direktör / üst yönetici / kendisi ekibe alınamaz
     member.manager = request.user
     member.save(update_fields=['manager'])
     messages.success(request, f'{member.display_name} ekibinize eklendi.')
@@ -459,8 +498,8 @@ def team_remove(request, user_id):
 def member_permissions(request, user_id):
     # Yönetici kendi ekibini, direktör herkesi düzenler; kimse kendi yetkilerini düzenleyemez
     member = get_object_or_404(team_queryset_for(request.user), pk=user_id)
-    if member.pk == request.user.pk:
-        raise PermissionDenied
+    if not can_manage_member(request.user, member):
+        raise PermissionDenied   # kendi yetkileri, direktör veya üst yönetici düzenlenemez
     all_perms = PermissionType.objects.all()
     if request.method == 'POST':
         selected = set(int(i) for i in request.POST.getlist('permissions') if i.isdigit())

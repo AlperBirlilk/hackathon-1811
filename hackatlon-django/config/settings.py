@@ -13,6 +13,10 @@ SECRET_KEY = os.environ.get(
     'django-insecure-dev-only-change-me-j2+rj#aq7lzy*0hwo%u++kq%04',
 )
 DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
+if not DEBUG and 'DJANGO_SECRET_KEY' not in os.environ:
+    # Production'da bilinen geliştirme anahtarıyla (session/token sahteciliği) çalışmayı reddet
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('DJANGO_DEBUG=0 iken DJANGO_SECRET_KEY ortam değişkeni zorunludur.')
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 INSTALLED_APPS = [

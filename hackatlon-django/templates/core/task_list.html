@@ -37,7 +37,7 @@
       <option value="">İşlem seçin</option>
       <optgroup label="Durumu değiştir">{% for k, v in status_choices %}<option value="status:{{ k }}">Durum: {{ v }}</option>{% endfor %}</optgroup>
       <optgroup label="Önemi değiştir">{% for k, v in severity_choices %}<option value="severity:{{ k }}">Önem: {{ v }}</option>{% endfor %}</optgroup>
-      <optgroup label="Atama"><option value="assign">Kişi ekle</option><option value="unassign">Kişiyi çıkar</option></optgroup>
+      {% if perm.task %}<optgroup label="Atama"><option value="assign">Kişi ekle</option><option value="unassign">Kişiyi çıkar</option></optgroup>{% endif %}
     </select>
     <select name="user" aria-label="Kişi" data-bulk-user hidden>
       {% for u in users %}<option value="{{ u.pk }}">{{ u.display_name }}</option>{% endfor %}

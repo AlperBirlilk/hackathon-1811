@@ -41,7 +41,7 @@
             {% include "_field.html" with field=form.due_date %}
             <p class="hint full field-hint">Boş bırakılırsa son tarih kaldırılır. SLA: Kritik 1, Yüksek 3, Orta 7, Düşük 14 gün.</p>
             {% include "_field.html" with field=form.assignees full=1 %}
-            {% include "_field.html" with field=form.backup_assignee %}
+            {% if 'backup_assignee' in form.fields %}{% include "_field.html" with field=form.backup_assignee %}{% endif %}
           </div>
           <div class="page-actions"><button class="btn">Değişiklikleri kaydet</button></div>
         </form>
