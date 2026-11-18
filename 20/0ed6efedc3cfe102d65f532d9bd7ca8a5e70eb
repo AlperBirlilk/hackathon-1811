@@ -1,0 +1,39 @@
+hackatlon-django/core/context_processors.py
+  s_be614a8d38a7a7::t_657909664c4f62 1,16
+hackatlon-django/core/notification_views.py
+  s_be614a8d38a7a7::t_6ee5059d5823d0 1-38
+hackatlon-django/core/report_views.py
+  s_be614a8d38a7a7::t_66dd829f33a802 1-32
+hackatlon-django/core/reports.py
+  s_be614a8d38a7a7::t_9751bd11a23dcd 1-211
+hackatlon-django/core/test_notifications.py
+  s_be614a8d38a7a7::t_d8e6410a4bddc7 1-82
+hackatlon-django/core/test_reports.py
+  s_be614a8d38a7a7::t_d39f5f43bc3025 1-191
+hackatlon-django/core/urls.py
+  s_be614a8d38a7a7::t_946eb3e20df5ea 4,22-28
+hackatlon-django/templates/app.html
+  s_be614a8d38a7a7::t_19a8485ccaed85 30-32
+hackatlon-django/templates/core/activity_form.html
+  s_be614a8d38a7a7::t_1b5dd14be3e204 13-15
+hackatlon-django/templates/core/activity_list.html
+  s_be614a8d38a7a7::t_ca9a6f7196f49c 17-21,36
+hackatlon-django/templates/core/notifications.html
+  s_be614a8d38a7a7::t_1ea38bb422fdff 1-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "200ed6efedc3cfe102d65f532d9bd7ca8a5e70eb",
+  "prompts": {},
+  "sessions": {
+    "s_be614a8d38a7a7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_be614a8d38a7a7",
+        "model": "unknown"
+      },
+      "human_author": "TURKCELL\\TCALBIRLIK <alper.birlik@turkcell.com.tr>"
+    }
+  }
+}
