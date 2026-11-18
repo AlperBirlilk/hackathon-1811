@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Erişim yok{% endblock %}
+{% block body %}
+{% include "_theme_toggle.html" with corner=1 %}
+<main class="auth"><div class="auth-box error-page">
+  <div class="num">403</div>
+  <h1 style="font-size:20px">Bu sayfaya erişim yetkiniz yok</h1>
+  <p>Gerekli yetki hesabınıza tanımlı değil. Yetki için ekip yöneticinize başvurun.</p>
+  <a class="btn" href="/">Genel bakışa dön</a>
+</div></main>
+{% endblock %}

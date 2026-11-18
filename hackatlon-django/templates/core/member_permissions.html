@@ -1,0 +1,21 @@
+{% extends "app.html" %}
+{% block title %}Yetkiler{% endblock %}
+{% block heading %}{{ member.display_name }} için yetkiler{% endblock %}
+{% block subheading %}<p class="sub">{{ member.title|default:member.username }}</p>{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:720px">
+  <div class="panel-body" style="padding:20px">
+    <form method="post">{% csrf_token %}
+      {% for p, has, grantable in rows %}
+      <label class="check-row{% if not grantable %} disabled{% endif %}">
+        <input type="checkbox" name="permissions" value="{{ p.id }}" {% if has %}checked{% endif %} {% if not grantable %}disabled{% endif %}>
+        <div style="flex:1"><div class="t">{{ p.permission_name }}</div><div class="d">{{ p.description }}</div></div>
+        {% if not grantable %}<span class="muted" style="font-size:12px">Sizde bu yetki yok</span>{% endif %}
+      </label>
+      {% endfor %}
+      <p class="hint">Yalnızca kendi sahip olduğunuz yetkileri verip geri alabilirsiniz.</p>
+      <div class="page-actions"><a class="btn ghost" href="{% url 'team' %}">Vazgeç</a><button class="btn">Yetkileri kaydet</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

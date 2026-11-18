@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block body %}
+{% with url=request.resolver_match.url_name %}
+<div class="app">
+  <aside class="sidebar">
+    <a class="brand" href="{% url 'dashboard' %}">
+      {% include "_brand_mark.html" %}
+      <span class="brand-name">Operasyon Portalı<small>Siber Güvenlik</small></span>
+    </a>
+
+    <nav class="nav" aria-label="Ana menü">
+      <a href="{% url 'dashboard' %}" class="{% if url == 'dashboard' %}active{% endif %}">
+        <svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Genel bakış</a>
+      <a href="{% url 'task_list' %}" class="{% if url|slice:':4' == 'task' %}active{% endif %}">
+        <svg class="i" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2"/></svg>İşler</a>
+      <a href="{% url 'activity_list' %}" class="{% if url|slice:':8' == 'activity' %}active{% endif %}">
+        <svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Etkinlikler</a>
+      {% if perm.data %}
+      <a href="{% url 'data_sharing' %}" class="{% if url == 'data_sharing' %}active{% endif %}">
+        <svg class="i" viewBox="0 0 24 24"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>Veri paylaşımı</a>
+      {% endif %}
+
+      {% if perm.role %}
+      <div class="nav-label">Yönetim</div>
+      <a href="{% url 'team' %}" class="{% if url == 'team' or url == 'member_permissions' or url == 'member_profile' %}active{% endif %}">
+        <svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.8 2.7 2.6 3 5.2"/></svg>Ekibim</a>
+      {% endif %}
+
+      <div class="nav-label">Hesap</div>
+      <a href="{% url 'profile' %}" class="{% if url == 'profile' %}active{% endif %}">
+        <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6.5 8-6.5s7.2 2.5 8 6.5"/></svg>Profilim</a>
+      {% if user.is_staff %}
+      <a href="{% url 'admin:index' %}">
+        <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Yönetim paneli</a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="user-chip">
+        <div class="avatar">{{ user.initials }}</div>
+        <div style="flex:1;min-width:0">
+          <span class="name">{{ user.display_name }}</span>
+          <span class="role">{{ user.title|default:user.username }}</span>
+        </div>
+        <form method="post" action="{% url 'logout' %}" class="inline-form">{% csrf_token %}
+          <button class="icon-btn" aria-label="Çıkış yap" title="Çıkış yap">
+            <svg class="i" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>{% block heading %}Genel bakış{% endblock %}</h1>
+        {% block subheading %}{% endblock %}
+      </div>
+      <div class="right">{% include "_theme_toggle.html" %}</div>
+    </header>
+
+    {% if messages %}
+    <ul class="messages" role="status">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endwith %}
+{% endblock %}

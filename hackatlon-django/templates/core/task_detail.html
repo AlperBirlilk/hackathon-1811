@@ -1,0 +1,64 @@
+{% extends "app.html" %}
+{% load humanize %}
+{% block title %}{{ task.task_title }}{% endblock %}
+{% block heading %}{{ task.task_title }}{% endblock %}
+{% block subheading %}
+<p class="sub"><span class="code">{{ task.code }}</span>&ensp;<span class="badge sev-{{ task.task_severity|lower }}">{{ task.get_task_severity_display }}</span>&ensp;<span class="badge st-{{ task.task_status|lower }}">{{ task.get_task_status_display }}</span></p>
+{% endblock %}
+{% block content %}
+<div class="grid grid-3-1">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2>Açıklama</h2></div>
+      <div class="panel-body">
+        <p class="desc" style="margin:0 0 18px">{{ task.task_description|default:"Açıklama girilmemiş." }}</p>
+        <dl class="kv">
+          <dt>Atananlar</dt><dd><div class="chips">{% for u in task.assignees.all %}<span class="chip">{{ u.display_name }}</span>{% empty %}<span class="muted">Atanmamış</span>{% endfor %}</div></dd>
+          <dt>Oluşturan</dt><dd>{{ task.created_by|default:"Bilinmiyor" }}, <span class="muted">{{ task.create_date|date:"j F Y H:i" }}</span></dd>
+          <dt>Son güncelleme</dt><dd>{{ task.modified_by|default:"Bilinmiyor" }}, <span class="muted">{{ task.modified_date|date:"j F Y H:i" }}</span></dd>
+        </dl>
+        {% if is_assignee and not editable %}
+        <form method="post" action="{% url 'task_status' task.pk %}" class="filters" style="margin-top:18px">{% csrf_token %}
+          <select name="status" aria-label="Durum">{% for k, v in status_choices %}<option value="{{ k }}" {% if task.task_status == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+          <button class="btn sm">Durumu güncelle</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if editable %}
+    <div class="panel">
+      <div class="panel-head"><h2>Düzenle</h2></div>
+      <div class="panel-body">
+        <form method="post">{% csrf_token %}
+          <div class="form-grid">
+            {% include "_field.html" with field=form.title full=1 %}
+            {% include "_field.html" with field=form.description full=1 %}
+            {% include "_field.html" with field=form.severity %}
+            {% include "_field.html" with field=form.status %}
+            {% include "_field.html" with field=form.assignees full=1 %}
+          </div>
+          <div class="page-actions"><button class="btn">Değişiklikleri kaydet</button></div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="panel" style="align-self:start">
+    <div class="panel-head"><h2>Geçmiş</h2></div>
+    <ul class="feed">
+      {% for h in history %}
+      <li>
+        <div class="avatar">{{ h.action_by.initials|default:"?" }}</div>
+        <div class="body">
+          <div class="what"><strong>{{ h.action_by.display_name|default:"Sistem" }}</strong></div>
+          <div class="muted" style="font-size:13px">{{ h.action_description }}</div>
+          <time class="when" datetime="{{ h.action_date|date:'c' }}" title="{{ h.action_date|date:'d.m.Y H:i' }}">{{ h.action_date|naturaltime }}</time>
+        </div>
+      </li>
+      {% empty %}<li class="empty" style="justify-content:center">Kayıt yok.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}
