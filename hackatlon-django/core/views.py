@@ -9,12 +9,14 @@ from django.contrib.auth.views import LoginView
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db.models import Case, Count, IntegerField, Q, Value, When
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from . import services
+from . import notifications, services
 from .forms import ActivityForm, ProfileForm, SkillForm, TaskForm, TaskStatusForm
 from .models import Activity, PermissionType, Task, TaskHistory, User, UserPermission, UserSkill
 
@@ -41,25 +43,90 @@ def portal_perm_required(code):
 
 
 def visible_tasks(user):
+    """TASK_MANAGEMENT: tüm task'lar; diğerleri: ana/yedek sorumlusu olduğu veya oluşturduğu task'lar."""
     qs = Task.objects.all()
     if not user.has_portal_perm(PermissionType.TASK_MANAGEMENT):
-        qs = qs.filter(Q(assignees=user) | Q(created_by=user)).distinct()
+        qs = qs.filter(Q(assignees=user) | Q(backup_assignee=user) | Q(created_by=user)).distinct()
     return qs
+
+
+def my_tasks_for(user):
+    """Dashboard 'İşlerim': bana atanan veya benim oluşturduğum task'lar."""
+    return Task.objects.filter(pk__in=Task.objects.filter(Q(assignees=user) | Q(created_by=user)).values('pk'))
+
+
+def handover_tasks_for(user):
+    """Devralınan işler: yedek sorumlusu olduğum, ana sorumlularından biri izinli, tamamlanmamış task'lar."""
+    return Task.objects.filter(pk__in=Task.objects.filter(
+        backup_assignee=user, assignees__is_on_leave=True,
+    ).exclude(task_status=Task.STATUS_DONE).values('pk'))
+
+
+def is_handover(task, user):
+    """Task, bu kullanıcı için yedek sorumlu olarak devralınmış mı (prefetch edilmiş assignees ile çalışır)."""
+    return (task.backup_assignee_id == user.id and task.task_status != Task.STATUS_DONE
+            and any(a.is_on_leave for a in task.assignees.all()))
 
 
 def can_edit_task(user, task):
     return user.has_portal_perm(PermissionType.TASK_MANAGEMENT) or task.created_by_id == user.id
 
 
+def can_change_status(user, task):
+    return (can_edit_task(user, task) or task.backup_assignee_id == user.id
+            or task.assignees.filter(pk=user.pk).exists())
+
+
+def wants_json(request):
+    return request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+
+def safe_next(request, fallback, *args):
+    nxt = request.POST.get('next') or request.GET.get('next')
+    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()},
+                                               require_https=request.is_secure()):
+        return redirect(nxt)
+    return redirect(fallback, *args)
+
+
+def task_json(task):
+    return {
+        'id': task.pk, 'code': task.code, 'title': task.task_title,
+        'severity': task.task_severity, 'severity_label': task.get_task_severity_display(),
+        'status': task.task_status, 'status_label': task.get_task_status_display(),
+        'due_date': timezone.localtime(task.due_date).isoformat() if task.due_date else None,
+        'is_overdue': task.is_overdue,
+        'url': reverse('task_detail', args=[task.pk]),
+    }
+
+
+def overdue_q():
+    """Gecikmiş: tamamlanmamış ve son tarihi geçmiş task'lar."""
+    return Q(task_status__in=Task.PENDING_STATUSES, due_date__lt=timezone.now())
+
+
+def team_queryset_for(user):
+    """Ekibim: direktör (tüm yetkiler) herkesi, yönetici kendi ekibini görür."""
+    if user.is_director:
+        return User.objects.filter(is_active=True).exclude(pk=user.pk)
+    return user.team_members.filter(is_active=True)
+
+
 def team_with_stats(manager):
+    now = timezone.now()
     return (
-        manager.team_members.filter(is_active=True)
+        team_queryset_for(manager)
         .annotate(
-            open_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_OPEN)),
-            progress_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_IN_PROGRESS)),
-            done_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_DONE)),
+            open_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_OPEN),
+                             distinct=True),
+            progress_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_IN_PROGRESS),
+                                 distinct=True),
+            done_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_DONE),
+                             distinct=True),
+            overdue_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status__in=Task.PENDING_STATUSES,
+                                                           assigned_tasks__due_date__lt=now), distinct=True),
         )
-        .order_by('first_name')
+        .order_by('first_name', 'username')
     )
 
 
@@ -114,11 +181,17 @@ def logout_view(request):
 @login_required
 def dashboard(request):
     user = request.user
-    my_tasks = user.assigned_tasks.all()
+    # İşlerim: bana atanan veya benim oluşturduğum tasklar
+    my_tasks = my_tasks_for(user)
+    by_priority = my_tasks.annotate(sev_rank=SEVERITY_RANK).order_by('sev_rank', '-modified_date')
+    lanes = [
+        (Task.STATUS_OPEN, 'Yapılacak', by_priority.filter(task_status=Task.STATUS_OPEN)),
+        (Task.STATUS_IN_PROGRESS, 'Devam ediyor', by_priority.filter(task_status=Task.STATUS_IN_PROGRESS)),
+        (Task.STATUS_DONE, 'Tamamlandı', my_tasks.filter(task_status=Task.STATUS_DONE)
+         .order_by('-modified_date')[:15]),
+    ]
     ctx = {
-        'pending_tasks': my_tasks.filter(task_status__in=Task.PENDING_STATUSES)
-                                 .annotate(sev_rank=SEVERITY_RANK).order_by('sev_rank', '-modified_date')[:8],
-        'done_tasks': my_tasks.filter(task_status=Task.STATUS_DONE)[:8],
+        'lanes': [(key, label, list(qs.prefetch_related('assignees'))) for key, label, qs in lanes],
         'my_activities': user.activities.filter(activity_date__gte=timezone.now())[:6],
         'stats': {
             'pending': my_tasks.filter(task_status__in=Task.PENDING_STATUSES).count(),
@@ -126,15 +199,22 @@ def dashboard(request):
             'critical': my_tasks.filter(task_status__in=Task.PENDING_STATUSES,
                                         task_severity=Task.SEVERITY_CRITICAL).count(),
             'activities': user.activities.filter(activity_date__gte=timezone.now()).count(),
+            'overdue': my_tasks.filter(overdue_q()).count(),
         },
+        'handover': list(
+            handover_tasks_for(user).annotate(sev_rank=SEVERITY_RANK).order_by('sev_rank', 'due_date')
+            .prefetch_related('assignees')
+        ),
     }
     if user.is_manager:
         ctx['team'] = team_with_stats(user)
     if user.has_portal_perm(PermissionType.REPORT_ANALYSIS):
-        total = Task.objects.count() or 1
+        task_count = Task.objects.count()
+        total = task_count or 1
         sev = dict(Task.objects.values_list('task_severity').annotate(c=Count('id')))
         sta = dict(Task.objects.values_list('task_status').annotate(c=Count('id')))
         ctx['report'] = {
+            'total': task_count,
             'severity': [(k, label, sev.get(k, 0), round(sev.get(k, 0) * 100 / total))
                          for k, label in Task.SEVERITY_CHOICES],
             'status': [(k, label, sta.get(k, 0), round(sta.get(k, 0) * 100 / total))
@@ -151,42 +231,57 @@ def dashboard(request):
 
 @login_required
 def task_list(request):
-    qs = visible_tasks(request.user).prefetch_related('assignees')
+    qs = visible_tasks(request.user).select_related('backup_assignee').prefetch_related('assignees')
     status = request.GET.get('status')
     severity = request.GET.get('severity')
+    overdue = request.GET.get('overdue') == '1'
     q = request.GET.get('q', '').strip()
     if status:
         qs = qs.filter(task_status=status)
     if severity:
         qs = qs.filter(task_severity=severity)
+    if overdue:
+        qs = qs.filter(overdue_q())
     if q:
         qs = qs.filter(Q(task_title__icontains=q) | Q(task_description__icontains=q))
     return render(request, 'core/task_list.html', {
         'tasks': qs, 'status_choices': Task.STATUS_CHOICES, 'severity_choices': Task.SEVERITY_CHOICES,
-        'f_status': status, 'f_severity': severity, 'q': q,
+        'f_status': status, 'f_severity': severity, 'f_overdue': overdue, 'q': q,
+        'users': User.objects.filter(is_active=True).order_by('first_name', 'username'),
     })
 
 
 @login_required
 def task_create(request):
-    form = TaskForm(request.POST or None)
+    form = TaskForm(request.POST or None, initial={'assignees': [request.user.pk]})
     if not request.user.has_portal_perm(PermissionType.TASK_MANAGEMENT):
         # Yetkisi olmayan kullanıcı yalnızca kendine task açabilir
         form.fields['assignees'].queryset = User.objects.filter(pk=request.user.pk)
+        # ...ve yedek sorumlu atayamaz
+        del form.fields['backup_assignee']
     if request.method == 'POST' and form.is_valid():
         d = form.cleaned_data
         task = services.create_task(
             user=request.user, title=d['title'], description=d['description'],
             severity=d['severity'], status=d['status'], assignees=list(d['assignees']),
+            due_date=d.get('due_date'), backup_assignee=d.get('backup_assignee'),
         )
+        if wants_json(request):
+            return JsonResponse({'ok': True, 'message': f'{task.code} oluşturuldu.', 'task': task_json(task)})
         messages.success(request, f'{task.code} oluşturuldu.')
-        return redirect('task_detail', pk=task.pk)
-    return render(request, 'core/task_form.html', {'form': form, 'is_new': True})
+        return redirect('task_create')
+    if request.method == 'POST' and wants_json(request):
+        return JsonResponse({'ok': False, 'errors': form.errors.get_json_data()}, status=400)
+    return render(request, 'core/task_form.html', {
+        'form': form,
+        'recent': Task.objects.filter(created_by=request.user).order_by('-id')[:8],
+    })
 
 
 @login_required
 def task_detail(request, pk):
-    task = get_object_or_404(visible_tasks(request.user).prefetch_related('assignees'), pk=pk)
+    task = get_object_or_404(
+        visible_tasks(request.user).select_related('backup_assignee').prefetch_related('assignees'), pk=pk)
     editable = can_edit_task(request.user, task)
     form = None
     if editable:
@@ -194,6 +289,9 @@ def task_detail(request, pk):
             'title': task.task_title, 'description': task.task_description,
             'severity': task.task_severity, 'status': task.task_status,
             'assignees': task.assignees.all(),
+            'due_date': (timezone.localtime(task.due_date).strftime('%Y-%m-%dT%H:%M')
+                         if task.due_date else None),
+            'backup_assignee': task.backup_assignee_id,
         }
         form = TaskForm(request.POST or None, initial=initial)
         if request.method == 'POST' and form.is_valid():
@@ -201,6 +299,7 @@ def task_detail(request, pk):
             changed = services.update_task(
                 task, user=request.user, title=d['title'], description=d['description'],
                 severity=d['severity'], status=d['status'], assignees=list(d['assignees']),
+                due_date=d['due_date'], backup_assignee=d['backup_assignee'],
             )
             messages.success(request, 'Task güncellendi.' if changed else 'Değişiklik yok.')
             return redirect('task_detail', pk=task.pk)
@@ -210,6 +309,8 @@ def task_detail(request, pk):
         'task': task, 'form': form, 'editable': editable,
         'history': task.history.select_related('action_by'),
         'is_assignee': task.assignees.filter(pk=request.user.pk).exists(),
+        'can_status': can_change_status(request.user, task),
+        'is_handover': is_handover(task, request.user),
         'status_choices': Task.STATUS_CHOICES,
     })
 
@@ -218,16 +319,66 @@ def task_detail(request, pk):
 @require_POST
 def task_status(request, pk):
     task = get_object_or_404(visible_tasks(request.user), pk=pk)
-    if not (can_edit_task(request.user, task) or task.assignees.filter(pk=request.user.pk).exists()):
+    if not can_change_status(request.user, task):
+        if wants_json(request):
+            return JsonResponse({'ok': False, 'error': 'Bu taskın durumunu değiştirme yetkiniz yok.'}, status=403)
         raise PermissionDenied
     form = TaskStatusForm(request.POST)
-    if form.is_valid():
-        if services.update_task(task, user=request.user, status=form.cleaned_data['status']):
-            messages.success(request, f'{task.code} durumu güncellendi: {task.get_task_status_display()}')
-    nxt = request.POST.get('next')
-    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
-        return redirect(nxt)
-    return redirect('task_detail', pk=task.pk)
+    if not form.is_valid():
+        if wants_json(request):
+            return JsonResponse({'ok': False, 'error': 'Geçersiz durum.'}, status=400)
+        return redirect('task_detail', pk=task.pk)
+    changed = services.update_task(task, user=request.user, status=form.cleaned_data['status'])
+    if wants_json(request):
+        return JsonResponse({'ok': True, 'changed': changed, 'task': task_json(task)})
+    if changed:
+        messages.success(request, f'{task.code} durumu güncellendi: {task.get_task_status_display()}')
+    return safe_next(request, 'task_detail', task.pk)
+
+
+BULK_LABELS = {'status': 'durum', 'severity': 'önem', 'assign': 'atama', 'unassign': 'atama'}
+
+
+@login_required
+@require_POST
+def task_bulk(request):
+    """Seçili tasklara toplu işlem: status:<X>, severity:<X>, assign, unassign."""
+    user = request.user
+    ids = [int(i) for i in request.POST.getlist('ids') if i.isdigit()]
+    kind, _, value = request.POST.get('op', '').partition(':')
+    valid = {'status': dict(Task.STATUS_CHOICES), 'severity': dict(Task.SEVERITY_CHOICES)}
+    target = None
+    if kind in ('assign', 'unassign'):
+        uid = request.POST.get('user', '')
+        target = User.objects.filter(pk=int(uid), is_active=True).first() if uid.isdigit() else None
+    if (not ids or kind not in BULK_LABELS or (kind in valid and value not in valid[kind])
+            or (kind in ('assign', 'unassign') and target is None)):
+        messages.error(request, 'Toplu işlem için en az bir task ve geçerli bir işlem seçin.')
+        return safe_next(request, 'task_list')
+
+    changed = skipped = 0
+    for task in visible_tasks(user).filter(pk__in=ids).prefetch_related('assignees'):
+        if kind == 'status':
+            if not can_change_status(user, task):
+                skipped += 1
+                continue
+            changed += services.update_task(task, user=user, status=value)
+            continue
+        if not can_edit_task(user, task):
+            skipped += 1
+            continue
+        if kind == 'severity':
+            changed += services.update_task(task, user=user, severity=value)
+        else:
+            current = set(task.assignees.all())
+            new = current | {target} if kind == 'assign' else current - {target}
+            changed += services.update_task(task, user=user, assignees=list(new))
+
+    msg = f'{changed} taskın {BULK_LABELS[kind]} bilgisi güncellendi.'
+    if skipped:
+        msg += f' Yetkiniz olmadığı için {skipped} task atlandı.'
+    (messages.warning if skipped else messages.success)(request, msg)
+    return safe_next(request, 'task_list')
 
 
 # --------------------------------------------------------------------------- activities
@@ -235,7 +386,7 @@ def task_status(request, pk):
 @login_required
 def activity_list(request):
     now = timezone.now()
-    base = Activity.objects.prefetch_related('attendees').select_related('created_by')
+    base = Activity.objects.prefetch_related('attendees').select_related('created_by', 'contact_person')
     return render(request, 'core/activity_list.html', {
         'upcoming': base.filter(activity_date__gte=now),
         'past': base.filter(activity_date__lt=now).order_by('-activity_date')[:10],
@@ -251,6 +402,7 @@ def activity_create(request):
         activity.created_by = request.user
         activity.save()
         form.save_m2m()
+        notifications.notify_activity_invited(activity, activity.attendees.all(), actor=request.user)
         messages.success(request, f'"{activity.activity_name}" etkinliği oluşturuldu.')
         return redirect('activity_list')
     return render(request, 'core/activity_form.html', {'form': form})
@@ -267,13 +419,6 @@ def activity_toggle_join(request, pk):
         activity.attendees.add(request.user)
         messages.success(request, f'"{activity.activity_name}" etkinliğine katıldınız.')
     return redirect('activity_list')
-
-
-# --------------------------------------------------------------------------- data sharing
-
-@portal_perm_required(PermissionType.DATA_ACCESS)
-def data_sharing(request):
-    return render(request, 'core/data_sharing.html')
 
 
 # --------------------------------------------------------------------------- team (yönetici)
@@ -312,7 +457,10 @@ def team_remove(request, user_id):
 
 @portal_perm_required(PermissionType.ROLE_MANAGEMENT)
 def member_permissions(request, user_id):
-    member = get_object_or_404(User, pk=user_id, manager=request.user)
+    # Yönetici kendi ekibini, direktör herkesi düzenler; kimse kendi yetkilerini düzenleyemez
+    member = get_object_or_404(team_queryset_for(request.user), pk=user_id)
+    if member.pk == request.user.pk:
+        raise PermissionDenied
     all_perms = PermissionType.objects.all()
     if request.method == 'POST':
         selected = set(int(i) for i in request.POST.getlist('permissions') if i.isdigit())
@@ -339,7 +487,7 @@ def member_permissions(request, user_id):
 def profile(request, user_id=None):
     if user_id and user_id != request.user.pk:
         target = get_object_or_404(User, pk=user_id)
-        if not (request.user.is_superuser or target.manager_id == request.user.pk):
+        if not (request.user.is_director or target.manager_id == request.user.pk):
             raise PermissionDenied
         own = False
     else:

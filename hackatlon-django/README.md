@@ -76,3 +76,24 @@ Task değişiklikleri `core/services.py` üzerinden yapılır ve her değişikli
 - LDAP: boş parola (anonymous bind) engellenir, kullanıcı adı whitelist + DN/filter escape (LDAP injection),
   yerel hesaplar LDAP ile eşleştirilmez (hesap ele geçirme koruması), pasif kullanıcı giriş yapamaz
 - Testler: `python manage.py test core`
+
+## E-posta bildirimleri
+
+`mailTemplate.msg` şablonu `templates/emails/notification.html` olarak alındı. Şu durumlarda mail gider:
+
+- **Task ataması:** task oluşturulurken veya düzenlenirken (toplu işlem dahil) *yeni eklenen* atananlara
+- **Etkinlik daveti:** etkinlik oluşturulurken seçilen katılımcılara
+
+İşlemi yapan kişiye mail gitmez. Alıcı adresi LDAP girişinde `user.email` alanına yazılan adrestir.
+Mailler DB işlemi tamamlandıktan sonra arka planda gönderilir; SMTP hatası ekranı etkilemez, loglanır.
+
+| Ayar (env) | Varsayılan | Açıklama |
+|---|---|---|
+| `MAIL_FROM` | `TEAM-SMA@smtp.turkcell.com.tr` | Gönderen |
+| `MAIL_HOST` / `MAIL_PORT` | `smtp.turkcell.com.tr` / `25` | SMTP (auth/TLS yok, saportal-be ile aynı) |
+| `MAIL_ALLOWED_DOMAINS` | `turkcell.com.tr` | Yalnızca bu domainlere gönderilir |
+| `MAIL_TEST_RECIPIENT` | boş | Doluysa tüm mailler bu adrese yönlendirilir |
+| `MAIL_ENABLED` | `1` | `0` ile tamamen kapatılır |
+| `PORTAL_BASE_URL` | `http://127.0.0.1:8000` | Maildeki linklerin adresi |
+
+Deneme maili: `python manage.py send_test_mail <kullanıcı> [--activity]`

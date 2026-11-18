@@ -1,6 +1,8 @@
 from django.urls import path
 
 from . import views
+from .api import portal_views as api_portal_views
+from . import notification_views, report_views
 
 urlpatterns = [
     path('login/', views.PortalLoginView.as_view(), name='login'),
@@ -12,12 +14,22 @@ urlpatterns = [
     path('tasks/new/', views.task_create, name='task_create'),
     path('tasks/<int:pk>/', views.task_detail, name='task_detail'),
     path('tasks/<int:pk>/status/', views.task_status, name='task_status'),
+    path('tasks/bulk/', views.task_bulk, name='task_bulk'),
 
     path('activities/', views.activity_list, name='activity_list'),
     path('activities/new/', views.activity_create, name='activity_create'),
     path('activities/<int:pk>/join/', views.activity_toggle_join, name='activity_toggle_join'),
 
-    path('data-sharing/', views.data_sharing, name='data_sharing'),
+    path('notifications/', notification_views.notification_list, name='notification_list'),
+    path('notifications/<int:pk>/read/', notification_views.notification_read, name='notification_read'),
+    path('notifications/read-all/', notification_views.notification_read_all, name='notification_read_all'),
+
+    path('reports/tasks.xlsx', report_views.report_tasks_xlsx, name='report_tasks_xlsx'),
+    path('reports/tasks.pdf', report_views.report_tasks_pdf, name='report_tasks_pdf'),
+
+    path('data-sharing/', api_portal_views.data_sharing, name='data_sharing'),
+    path('data-sharing/token/', api_portal_views.api_token_generate, name='api_token_generate'),
+    path('data-sharing/token/revoke/', api_portal_views.api_token_revoke, name='api_token_revoke'),
 
     path('team/', views.team, name='team'),
     path('team/add/', views.team_add, name='team_add'),

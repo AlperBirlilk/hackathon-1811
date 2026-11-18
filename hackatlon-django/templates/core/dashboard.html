@@ -2,108 +2,110 @@
 {% load humanize %}
 {% block title %}Genel bakış{% endblock %}
 {% block heading %}Merhaba, {{ user.first_name|default:user.username }}{% endblock %}
-{% block subheading %}
-<p class="sub">{% if stats.pending %}Bekleyen {{ stats.pending }} işiniz var{% if stats.critical %}, {{ stats.critical }} tanesi kritik{% endif %}.{% else %}Bekleyen işiniz yok.{% endif %}</p>
-{% endblock %}
+{% block subheading %}<p class="sub">{% now "j F Y, l" %}</p>{% endblock %}
 {% block content %}
 
 <section class="panel summary section" aria-label="Özet">
-  <div><div class="value">{{ stats.pending }}</div><div class="label">Bekleyen iş</div></div>
-  <div><div class="value{% if stats.critical %} crit{% endif %}">{{ stats.critical }}</div><div class="label">Kritik öncelikli</div></div>
-  <div><div class="value">{{ stats.done }}</div><div class="label">Tamamlanan</div></div>
+  <div><div class="value" data-stat="pending">{{ stats.pending }}</div><div class="label">Bekleyen iş</div></div>
+  <div><div class="value{% if stats.critical %} crit{% endif %}" data-stat="critical">{{ stats.critical }}</div><div class="label">Kritik öncelikli</div></div>
+  <div><div class="value" data-stat="done">{{ stats.done }}</div><div class="label">Tamamlanan</div></div>
   <div><div class="value">{{ stats.activities }}</div><div class="label">Yaklaşan etkinlik</div></div>
+  <div><a class="summary-link" href="{% url 'task_list' %}?overdue=1"><div class="value{% if stats.overdue %} crit{% endif %}" data-stat="overdue">{{ stats.overdue }}</div><div class="label">Gecikmiş</div></a></div>
 </section>
 
-<section class="grid grid-3-1 section">
-  <div class="panel">
-    <div class="panel-head"><h2>İşlerim</h2>
-      <div class="actions"><a class="btn sm ghost" href="{% url 'task_list' %}">Tüm işler</a><a class="btn sm" href="{% url 'task_create' %}">Yeni task</a></div>
-    </div>
-    <div class="panel-body grid grid-2" style="gap:28px">
-      <div class="sub-panel">
-        <h3>Bekleyen</h3>
-        <ul class="list">
-          {% for t in pending_tasks %}
-          <li class="sev-row {{ t.task_severity|lower }}" title="Önem: {{ t.get_task_severity_display }}">
-            <a class="title" href="{% url 'task_detail' t.pk %}">{{ t.task_title }}</a>
-            <form method="post" action="{% url 'task_status' t.pk %}" class="inline-form">{% csrf_token %}
-              <input type="hidden" name="next" value="{% url 'dashboard' %}">
-              {% if t.task_status == 'OPEN' %}
-                <input type="hidden" name="status" value="IN_PROGRESS"><button class="btn sm ghost">Başlat</button>
-              {% else %}
-                <input type="hidden" name="status" value="DONE"><button class="btn sm ghost">Tamamla</button>
-              {% endif %}
-            </form>
-          </li>
-          {% empty %}<li class="empty">Bekleyen işiniz yok.</li>{% endfor %}
-        </ul>
-      </div>
-      <div class="sub-panel">
-        <h3>Tamamlanan</h3>
-        <ul class="list">
-          {% for t in done_tasks %}
-          <li><span class="code">{{ t.code }}</span><a class="title" href="{% url 'task_detail' t.pk %}">{{ t.task_title }}</a></li>
-          {% empty %}<li class="empty">Henüz tamamladığınız iş yok.</li>{% endfor %}
-        </ul>
-      </div>
-    </div>
+{% if handover %}
+<section class="panel section" aria-label="Devralınan işler">
+  <div class="panel-head"><h2>Devralınan işler</h2>
+    <span class="muted" style="font-size:12px">Ana sorumlusu izinde olan ve yedeği olduğunuz işler</span>
   </div>
+  <div class="panel-body" style="padding-top:4px">
+    <ul class="list">
+      {% for t in handover %}
+      <li class="sev-row {{ t.task_severity|lower }}">
+        <a class="title" href="{% url 'task_detail' t.pk %}">{{ t.task_title }}</a>
+        <span class="code">{{ t.code }}</span>
+        <span class="badge sev-{{ t.task_severity|lower }}">{{ t.get_task_severity_display }}</span>
+        <span class="badge st-{{ t.task_status|lower }}">{{ t.get_task_status_display }}</span>
+        {% if t.due_date %}<span class="due{% if t.is_overdue %} red{% endif %}" title="Son tarih">{{ t.due_date|date:"j M, H:i" }}</span>{% endif %}
+        {% if t.is_overdue %}<span class="badge overdue">Gecikmiş</span>{% endif %}
+        <span class="muted" style="font-size:12px">Ana sorumlu: {% for u in t.assignees.all %}{{ u.display_name }}{% if u.is_on_leave %} (izinli){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
 
+<section class="panel section">
+  <div class="panel-head"><h2>İşlerim</h2>
+    <span class="muted" style="font-size:12px">Kartları sürükleyerek durumunu değiştirin</span>
+    <div class="actions"><a class="btn sm ghost" href="{% url 'task_list' %}">Tüm işler</a><a class="btn sm" href="{% url 'task_create' %}">Yeni task</a></div>
+  </div>
+  <div class="board" data-board>
+    {% csrf_token %}
+    {% for key, label, tasks in lanes %}
+    <section class="lane" data-status="{{ key }}" aria-label="{{ label }}">
+      <header class="lane-head"><h3><span class="badge st-{{ key|lower }}">{{ label }}</span></h3><span class="lane-count" data-count>{{ tasks|length }}</span></header>
+      <ul class="lane-list{% if not tasks %} is-empty{% endif %}">{% for t in tasks %}
+        <li class="card sev-row {{ t.task_severity|lower }}" draggable="true" data-id="{{ t.pk }}" data-severity="{{ t.task_severity }}" data-url="{% url 'task_status' t.pk %}"{% if t.due_date %} data-due="{{ t.due_date|date:'c' }}"{% endif %}>
+          <a class="card-title" href="{% url 'task_detail' t.pk %}" draggable="false">{{ t.task_title }}</a>
+          <div class="card-meta">
+            <span class="badge sev-{{ t.task_severity|lower }}">{{ t.get_task_severity_display }}</span>
+            <span class="code">{{ t.code }}</span>
+            {% if t.due_date %}<span class="due{% if t.is_overdue %} red{% endif %}" title="Son tarih">{{ t.due_date|date:"j M, H:i" }}</span>{% endif %}
+            {% if t.is_overdue %}<span class="badge overdue" data-overdue-badge>Gecikmiş</span>{% endif %}
+            <span class="avatars">{% for u in t.assignees.all|slice:":3" %}<span class="avatar" title="{{ u.display_name }}">{{ u.initials }}</span>{% endfor %}</span>
+          </div>
+          <div class="card-move">
+            <button type="button" class="mv" data-move="-1" aria-label="{{ t.task_title }}: önceki sütuna taşı"><svg class="i" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button>
+            <button type="button" class="mv" data-move="1" aria-label="{{ t.task_title }}: sonraki sütuna taşı"><svg class="i" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>
+          </div>
+        </li>{% endfor %}</ul>
+    </section>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="grid grid-auto section">
   <div class="panel">
     <div class="panel-head"><h2>Etkinliklerim</h2><div class="actions"><a class="btn sm ghost" href="{% url 'activity_list' %}">Tümü</a></div></div>
     <div class="panel-body">
       {% for a in my_activities %}
-      <div class="event">
+      <a class="event event-link" href="{% url 'activity_list' %}#activity-{{ a.pk }}">
         <div class="event-date"><div class="d">{{ a.activity_date|date:"j" }}</div><div class="m">{{ a.activity_date|date:"M" }}</div></div>
         <div class="info"><div class="n">{{ a.activity_name }}</div><div class="meta">{{ a.activity_date|date:"H:i" }}{% if a.location %}, {{ a.location }}{% endif %}</div></div>
-      </div>
+      </a>
       {% empty %}<div class="empty">Katıldığınız yaklaşan etkinlik yok. <a href="{% url 'activity_list' %}">Etkinliklere göz atın</a>.</div>{% endfor %}
     </div>
   </div>
-</section>
 
-{% if team is not None or report %}
-<section class="grid {% if team is not None and report %}grid-2{% endif %} section">
   {% if team is not None %}
   <div class="panel">
     <div class="panel-head"><h2>Ekibim</h2>
-      <div class="actions"><div class="legend"><span>Açık</span><span>Sürüyor</span><span>Biten</span></div></div>
+      <div class="actions"><div class="legend"><span>Açık</span><span>Sürüyor</span><span>Biten</span><span>Geciken</span></div></div>
     </div>
     <div class="panel-body" style="padding-top:6px">
       {% for m in team %}
       <a class="member" href="{% url 'member_profile' m.pk %}">
         <div class="avatar">{{ m.initials }}</div>
-        <div class="info"><div class="n">{{ m.display_name }}</div><div class="t">{{ m.title }}</div></div>
-        <div class="counters" aria-label="Açık {{ m.open_count }}, sürüyor {{ m.progress_count }}, biten {{ m.done_count }}">
+        <div class="info"><div class="n">{{ m.display_name }}{% if m.is_on_leave %} <span class="badge leave">İzinli</span>{% endif %}</div><div class="t">{{ m.title }}</div></div>
+        <div class="counters" aria-label="Açık {{ m.open_count }}, sürüyor {{ m.progress_count }}, biten {{ m.done_count }}, geciken {{ m.overdue_count }}">
           <span class="counter o">{{ m.open_count }}</span>
           <span class="counter p">{{ m.progress_count }}</span>
           <span class="counter d">{{ m.done_count }}</span>
+          <span class="counter late{% if not m.overdue_count %} zero{% endif %}">{{ m.overdue_count }}</span>
         </div>
       </a>
       {% empty %}<div class="empty">Ekibinizde henüz kimse yok. <a href="{% url 'team' %}">Üye ekleyin</a>.</div>{% endfor %}
     </div>
   </div>
   {% endif %}
+</section>
 
-  {% if report %}
-  <div class="panel">
-    <div class="panel-head"><h2>Dağılım</h2><div class="actions"><span class="muted" style="font-size:12px">Tüm tasklar</span></div></div>
-    <div class="panel-body grid grid-2" style="gap:28px">
-      <div class="sub-panel">
-        <h3>Önem derecesi</h3>
-        {% for key, label, count, pct in report.severity %}
-        <div class="bar-row"><span>{{ label }}</span><div class="bar {{ key|lower }}"><i style="width:{{ pct }}%"></i></div><span>{{ count }}</span></div>
-        {% endfor %}
-      </div>
-      <div class="sub-panel">
-        <h3>Durum</h3>
-        {% for key, label, count, pct in report.status %}
-        <div class="bar-row"><span>{{ label }}</span><div class="bar {{ key|lower }}"><i style="width:{{ pct }}%"></i></div><span>{{ count }}</span></div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
+{% if report %}
+<section class="grid grid-2 section">
+  {% include "_distribution_panel.html" with title="Önem dağılımı" rows=report.severity total=report.total filter="severity" %}
+  {% include "_distribution_panel.html" with title="Durum dağılımı" rows=report.status total=report.total filter="status" %}
 </section>
 {% endif %}
 

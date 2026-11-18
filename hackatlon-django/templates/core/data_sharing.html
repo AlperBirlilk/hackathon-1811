@@ -1,11 +1,91 @@
 {% extends "app.html" %}
 {% block title %}Veri paylaşımı{% endblock %}
 {% block heading %}Veri paylaşımı{% endblock %}
+{% block subheading %}<p class="muted" style="margin:2px 0 0;font-size:13px">Portal verisini salt okunur REST API ve MCP server üzerinden kendi yetki sınırlarınız içinde paylaşın.</p>{% endblock %}
 {% block content %}
-<div class="panel" style="max-width:720px">
-  <div class="panel-body" style="padding:28px">
-    <h2 style="font-size:16px;margin-bottom:6px">Bu alan hazırlanıyor</h2>
-    <p class="muted" style="margin:0;max-width:60ch">IOC listeleri, tehdit istihbaratı ve olay raporları ekipler arasında buradan paylaşılacak. Sayfayı yalnızca veri erişim yetkisi olan kullanıcılar görür.</p>
+<div class="grid grid-2">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2>API token</h2></div>
+      <div class="panel-body">
+        {% if new_token %}
+        <div class="sub-panel" style="margin-bottom:16px">
+          <h3>Yeni token oluşturuldu</h3>
+          <label for="new-token" class="hint" style="display:block;margin:0 0 6px">Token'ı şimdi kopyalayın. Güvenliğiniz için <strong>bir daha gösterilmeyecek</strong>.</label>
+          <input type="text" id="new-token" class="code" value="{{ new_token }}" readonly autocomplete="off" spellcheck="false" style="width:100%">
+          <p class="hint">Bu sayfayı yeniledikten veya kapattıktan sonra token yalnızca maskelenmiş olarak görünür. Kaybederseniz yeni token üretin.</p>
+        </div>
+        {% endif %}
+
+        {% if token_info %}
+        <dl class="kv">
+          <dt>Token</dt><dd><span class="code">{{ token_info.masked }}</span></dd>
+          <dt>Oluşturulma</dt><dd>{{ token_info.created|date:"j F Y H:i" }}</dd>
+          <dt>Geçerlilik</dt><dd>{{ token_info.expires|date:"j F Y H:i" }} ({{ ttl_hours }} saat)</dd>
+          <dt>Durum</dt><dd>{% if token_info.expired %}<span class="badge red">Süresi dolmuş</span>{% else %}<span class="badge green">Geçerli</span>{% endif %}</dd>
+        </dl>
+        {% if token_info.expired %}<p class="hint">Token'ın süresi dolmuş; API istekleri 401 ile reddedilir. Yeni token üretin.</p>{% endif %}
+        {% else %}
+        <p class="muted" style="margin:0;font-size:13px">Henüz bir API token'ınız yok. MCP server veya API istemcisi için bir token üretin.</p>
+        {% endif %}
+
+        <div class="page-actions" style="justify-content:flex-start">
+          <form method="post" action="{% url 'api_token_generate' %}" class="inline-form">{% csrf_token %}
+            <button class="btn">{% if token_info %}Token'ı yenile{% else %}Token üret{% endif %}</button>
+          </form>
+          {% if token_info %}
+          <form method="post" action="{% url 'api_token_revoke' %}" class="inline-form">{% csrf_token %}
+            <button class="btn red">Token'ı sil</button>
+          </form>
+          {% endif %}
+        </div>
+        <p class="hint">Token {{ ttl_hours }} saat geçerlidir. Yenilemek eski token'ı hemen geçersiz kılar. Token'ı kimseyle paylaşmayın, koda veya depoya eklemeyin.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Kullanım</h2></div>
+      <div class="panel-body">
+        <p style="margin:0 0 8px;font-size:13px">Her isteğe başlık ekleyin:</p>
+        <pre class="code" style="margin:0 0 14px;white-space:pre-wrap;overflow-wrap:anywhere">Authorization: Bearer &lt;token&gt;</pre>
+        <p style="margin:0 0 8px;font-size:13px">Örnek:</p>
+        <pre class="code" style="margin:0;white-space:pre-wrap;overflow-wrap:anywhere">curl -H "Authorization: Bearer $PORTAL_API_TOKEN" {{ api_base_url }}/api/me</pre>
+        <p class="hint">Yanıtlar JSON'dur. Hatalar <span class="code">{"error": {"code", "message"}}</span> biçiminde döner. API salt okunurdur; yalnızca GET desteklenir.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2>MCP server ile kullanım</h2></div>
+      <div class="panel-body">
+        <p style="margin:0 0 8px;font-size:13px">Repo kökündeki <span class="code">.mcp.json.example</span> dosyasını <span class="code">.mcp.json</span> olarak kopyalayın ve token'ı <span class="code">PORTAL_API_TOKEN</span> ortam değişkeninde tanımlayın:</p>
+        <pre class="code" style="margin:0 0 14px;white-space:pre-wrap;overflow-wrap:anywhere">{{ mcp_json }}</pre>
+        <dl class="kv">
+          <dt>PORTAL_API_URL</dt><dd><span class="code">{{ api_base_url }}</span></dd>
+          <dt>PORTAL_API_TOKEN</dt><dd>Bu sayfada üretilen token</dd>
+        </dl>
+        <p class="hint">Gereksinim: <span class="code">pip install uv</span>. Ayrıntılı kurulum ve tool listesi için repodaki <span class="code">mcp/README.md</span> dosyasına bakın. MCP server yalnızca GET endpoint'lerini çağırır; veriler sizin yetkileriniz ve görünürlük kurallarınızla sınırlıdır.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Endpoint'ler</h2></div>
+      <div class="panel-body" style="padding:0;overflow-x:auto">
+        <table class="table">
+          <thead><tr><th>Yol</th><th>Açıklama</th><th>Yetki</th></tr></thead>
+          <tbody>
+            {% for method, path, desc, perm in endpoints %}
+            <tr>
+              <td><span class="code">{{ method }} {{ path }}</span></td>
+              <td>{{ desc }}</td>
+              <td class="muted" style="font-size:12px">{{ perm }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

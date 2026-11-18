@@ -1,23 +1,23 @@
 {% extends "app.html" %}
 {% block title %}Ekibim{% endblock %}
 {% block heading %}Ekibim{% endblock %}
-{% block subheading %}<p class="sub">Ekip üyelerinizi ve portal yetkilerini buradan yönetin.</p>{% endblock %}
+{% block subheading %}<p class="sub">{% if user.is_director %}Direktör olarak tüm kullanıcıları görür, yetkilerini düzenleyebilirsiniz. Ekipten çıkarma yalnızca kendi ekibiniz için geçerlidir.{% else %}Ekip üyelerinizi ve portal yetkilerini buradan yönetin.{% endif %}</p>{% endblock %}
 {% block content %}
 <div class="grid grid-3-1">
   <div class="panel">
-    <div class="panel-head"><h2>Üyeler</h2><div class="actions"><div class="legend"><span>Açık</span><span>Sürüyor</span><span>Biten</span></div></div></div>
+    <div class="panel-head"><h2>Üyeler</h2><div class="actions"><div class="legend"><span>Açık</span><span>Sürüyor</span><span>Biten</span><span>Geciken</span></div></div></div>
     <div class="panel-body flush" style="overflow-x:auto">
       <table class="table">
         <thead><tr><th>Kişi</th><th>Tasklar</th><th>Yetkiler</th><th></th></tr></thead>
         <tbody>
         {% for m in team %}
           <tr>
-            <td><div class="user-chip"><div class="avatar">{{ m.initials }}</div><div><a class="name" href="{% url 'member_profile' m.pk %}">{{ m.display_name }}</a><span class="role">{{ m.title|default:m.username }}</span></div></div></td>
-            <td><div class="counters"><span class="counter o">{{ m.open_count }}</span><span class="counter p">{{ m.progress_count }}</span><span class="counter d">{{ m.done_count }}</span></div></td>
+            <td><div class="user-chip"><div class="avatar">{{ m.initials }}</div><div><a class="name" href="{% url 'member_profile' m.pk %}">{{ m.display_name }}</a>{% if m.is_on_leave %}<span class="badge leave">İzinli</span>{% endif %}<span class="role">{{ m.title|default:m.username }}</span></div></div></td>
+            <td><div class="counters"><span class="counter o">{{ m.open_count }}</span><span class="counter p">{{ m.progress_count }}</span><span class="counter d">{{ m.done_count }}</span><span class="counter late{% if not m.overdue_count %} zero{% endif %}">{{ m.overdue_count }}</span></div></td>
             <td><div class="chips">{% for p in m.permissions.all %}<span class="badge perm-badge">{{ p.permission_name }}</span>{% empty %}<span class="muted">Yetki yok</span>{% endfor %}</div></td>
             <td style="text-align:right;white-space:nowrap">
               <a class="btn sm ghost" href="{% url 'member_permissions' m.pk %}">Yetkileri düzenle</a>
-              <form method="post" action="{% url 'team_remove' m.pk %}" class="inline-form" data-confirm="{{ m.display_name }} ekipten çıkarılsın mı?">{% csrf_token %}<button class="btn sm red">Ekipten çıkar</button></form>
+              {% if m.manager_id == request.user.pk %}<form method="post" action="{% url 'team_remove' m.pk %}" class="inline-form" data-confirm="{{ m.display_name }} ekipten çıkarılsın mı?">{% csrf_token %}<button class="btn sm red">Ekipten çıkar</button></form>{% endif %}
             </td>
           </tr>
         {% empty %}

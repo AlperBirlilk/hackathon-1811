@@ -3,7 +3,7 @@
 {% block heading %}İşler{% endblock %}
 {% block subheading %}<p class="sub">{% if perm.task %}Ekipteki tüm tasklar{% else %}Size atanan ve sizin açtığınız tasklar{% endif %}</p>{% endblock %}
 {% block content %}
-<div class="panel">
+<div class="panel" data-bulk-scope>
   <div class="panel-head">
     <form method="get" class="filters" role="search">
       <input type="search" name="q" value="{{ q }}" placeholder="Başlık veya açıklamada ara" aria-label="Ara">
@@ -13,25 +13,58 @@
       <select name="severity" data-autosubmit aria-label="Önem"><option value="">Tüm önem dereceleri</option>
         {% for k, v in severity_choices %}<option value="{{ k }}" {% if f_severity == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
       </select>
+      <select name="overdue" data-autosubmit aria-label="Son tarih"><option value="">Tüm son tarihler</option>
+        <option value="1" {% if f_overdue %}selected{% endif %}>Gecikmiş</option>
+      </select>
       <button class="btn ghost">Ara</button>
-      {% if q or f_status or f_severity %}<a class="btn ghost" href="{% url 'task_list' %}">Filtreleri temizle</a>{% endif %}
+      {% if q or f_status or f_severity or f_overdue %}<a class="btn ghost" href="{% url 'task_list' %}">Filtreleri temizle</a>{% endif %}
     </form>
-    <div class="actions"><a class="btn sm" href="{% url 'task_create' %}">Yeni task</a></div>
+    <div class="actions">
+      {% if perm.report %}
+      <a class="btn sm ghost" href="{% url 'report_tasks_xlsx' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" title="Mevcut filtrelerle Excel olarak indir">Excel</a>
+      <a class="btn sm ghost" href="{% url 'report_tasks_pdf' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" title="Mevcut filtrelerle PDF olarak indir">PDF</a>
+      {% endif %}
+      {% if tasks %}<button type="button" class="btn sm ghost" data-bulk-toggle aria-pressed="false">Toplu işlem</button>{% endif %}
+      <a class="btn sm" href="{% url 'task_create' %}">Yeni task</a>
+    </div>
   </div>
+
+  <form method="post" action="{% url 'task_bulk' %}" id="bulk-form" class="bulk-bar" hidden>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <strong data-bulk-count>0 task seçildi</strong>
+    <select name="op" aria-label="Toplu işlem" data-bulk-op required>
+      <option value="">İşlem seçin</option>
+      <optgroup label="Durumu değiştir">{% for k, v in status_choices %}<option value="status:{{ k }}">Durum: {{ v }}</option>{% endfor %}</optgroup>
+      <optgroup label="Önemi değiştir">{% for k, v in severity_choices %}<option value="severity:{{ k }}">Önem: {{ v }}</option>{% endfor %}</optgroup>
+      <optgroup label="Atama"><option value="assign">Kişi ekle</option><option value="unassign">Kişiyi çıkar</option></optgroup>
+    </select>
+    <select name="user" aria-label="Kişi" data-bulk-user hidden>
+      {% for u in users %}<option value="{{ u.pk }}">{{ u.display_name }}</option>{% endfor %}
+    </select>
+    <button class="btn sm" type="submit">Uygula</button>
+    <button class="btn sm ghost" type="button" data-bulk-toggle>Vazgeç</button>
+  </form>
+
   <div class="panel-body flush" style="overflow-x:auto">
-    <table class="table">
-      <thead><tr><th>Başlık</th><th>Önem</th><th>Durum</th><th>Atananlar</th><th>Son güncelleme</th></tr></thead>
+    <table class="table bulk-table">
+      <thead><tr>
+        <th class="sel"><input type="checkbox" data-bulk-all aria-label="Tümünü seç"></th>
+        <th>Başlık</th><th>Önem</th><th>Durum</th><th>Atananlar</th><th>Son tarih</th><th>Son güncelleme</th>
+      </tr></thead>
       <tbody>
       {% for t in tasks %}
         <tr>
+          <td class="sel"><input type="checkbox" name="ids" value="{{ t.pk }}" form="bulk-form" aria-label="{{ t.task_title }} seç"></td>
           <td class="sev-row {{ t.task_severity|lower }}"><a href="{% url 'task_detail' t.pk %}">{{ t.task_title }}</a> <span class="code">{{ t.code }}</span></td>
           <td><span class="badge sev-{{ t.task_severity|lower }}">{{ t.get_task_severity_display }}</span></td>
           <td><span class="badge st-{{ t.task_status|lower }}">{{ t.get_task_status_display }}</span></td>
-          <td><div class="avatars">{% for u in t.assignees.all %}<span class="avatar" title="{{ u.display_name }}">{{ u.initials }}</span>{% empty %}<span class="muted">Atanmamış</span>{% endfor %}</div></td>
+          <td><div class="avatars">{% for u in t.assignees.all %}<span class="avatar" title="{{ u.display_name }}">{{ u.initials }}</span>{% empty %}<span class="muted">Atanmamış</span>{% endfor %}</div>{% if t.backup_assignee %}<div class="muted backup-note">Yedek: {{ t.backup_assignee.display_name }}</div>{% endif %}</td>
+          <td style="white-space:nowrap">{% if t.due_date %}<span class="{% if t.is_overdue %}red{% else %}muted{% endif %}">{{ t.due_date|date:"j M, H:i" }}</span>{% if t.is_overdue %} <span class="badge overdue">Gecikmiş</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
           <td class="muted" style="white-space:nowrap">{{ t.modified_date|date:"j M, H:i" }}</td>
         </tr>
       {% empty %}
-        <tr><td colspan="5"><div class="empty">{% if q or f_status or f_severity %}Bu filtrelere uyan task yok.{% else %}Henüz task yok. <a href="{% url 'task_create' %}">İlk taskı oluşturun</a>.{% endif %}</div></td></tr>
+        <tr><td colspan="7"><div class="empty">{% if q or f_status or f_severity or f_overdue %}Bu filtrelere uyan task yok.{% else %}Henüz task yok. <a href="{% url 'task_create' %}">İlk taskı oluşturun</a>.{% endif %}</div></td></tr>
       {% endfor %}
       </tbody>
     </table>

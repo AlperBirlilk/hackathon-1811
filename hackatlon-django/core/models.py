@@ -1,10 +1,13 @@
 """
-Entity yapısı (img.png):
+Entity yapısı (docs/prototype-erd.png):
   User, User_Permission, Permission_Type, User_Skill, task, task_history, activity
 """
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class PermissionType(models.Model):
@@ -51,6 +54,7 @@ class User(AbstractUser):
     phone = models.CharField('Telefon', max_length=30, blank=True)
     location = models.CharField('Lokasyon', max_length=100, blank=True)
     bio = models.TextField('Hakkında', blank=True)
+    is_on_leave = models.BooleanField('İzinli', default=False)
     manager = models.ForeignKey(
         'self', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='team_members', verbose_name='Yönetici',
@@ -86,6 +90,14 @@ class User(AbstractUser):
     @property
     def is_manager(self):
         return self.has_portal_perm(PermissionType.ROLE_MANAGEMENT)
+
+    @property
+    def is_director(self):
+        """Direktör: tüm portal yetkilerine sahip kullanıcı (veya superuser). Ekibim'de herkesi görür."""
+        if self.is_superuser:
+            return True
+        all_codes = {code for code, _ in PermissionType.CODE_CHOICES}
+        return all_codes <= self.permission_codes()
 
 
 class UserPermission(models.Model):
@@ -151,12 +163,19 @@ class Task(models.Model):
         (SEVERITY_HIGH, 'Yüksek'),
         (SEVERITY_CRITICAL, 'Kritik'),
     ]
+    # Son tarih verilmezse oluşturma anına eklenecek gün sayısı (SLA)
+    SLA_DAYS = {SEVERITY_CRITICAL: 1, SEVERITY_HIGH: 3, SEVERITY_MEDIUM: 7, SEVERITY_LOW: 14}
 
     task_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_OPEN)
     task_severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default=SEVERITY_MEDIUM)
     task_title = models.CharField(max_length=200)
     task_description = models.TextField(blank=True)
     assignees = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='assigned_tasks', blank=True)
+    backup_assignee = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='backup_tasks', verbose_name='Yedek sorumlu',
+    )
+    due_date = models.DateTimeField('Son tarih', null=True, blank=True)
 
     create_date = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
@@ -178,6 +197,15 @@ class Task(models.Model):
     def code(self):
         return f'TSK-{self.pk:04d}'
 
+    @classmethod
+    def sla_due_date(cls, severity, start=None):
+        start = start or timezone.now()
+        return start + timedelta(days=cls.SLA_DAYS.get(severity, 7))
+
+    @property
+    def is_overdue(self):
+        return bool(self.due_date and self.task_status != self.STATUS_DONE and self.due_date < timezone.now())
+
 
 class TaskHistory(models.Model):
     """task_history: id, task_id, action_type, action_description (log)"""
@@ -187,12 +215,16 @@ class TaskHistory(models.Model):
     DESCRIPTION_CHANGE = 'description_change'
     ASSIGNMENT_CHANGE = 'assignment_change'
     SEVERITY_CHANGE = 'severity_change'
+    DUE_DATE_CHANGE = 'due_date_change'
+    BACKUP_CHANGE = 'backup_change'
     ACTION_CHOICES = [
         (CREATED, 'Oluşturuldu'),
         (STATUS_CHANGE, 'Durum Değişikliği'),
         (DESCRIPTION_CHANGE, 'Açıklama Değişikliği'),
         (ASSIGNMENT_CHANGE, 'Atama Değişikliği'),
         (SEVERITY_CHANGE, 'Önem Derecesi Değişikliği'),
+        (DUE_DATE_CHANGE, 'Son Tarih Değişikliği'),
+        (BACKUP_CHANGE, 'Yedek Sorumlu Değişikliği'),
     ]
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='history')
@@ -212,10 +244,26 @@ class TaskHistory(models.Model):
 class Activity(models.Model):
     """activity: id, activity_name, activity_date, create_date, created_by, attendees"""
 
+    TYPE_TRAINING = 'TRAINING'
+    TYPE_CONFERENCE = 'CONFERENCE'
+    TYPE_OTHER = 'OTHER'
+    TYPE_CHOICES = [(TYPE_TRAINING, 'Eğitim'), (TYPE_CONFERENCE, 'Konferans'), (TYPE_OTHER, 'Diğer')]
+
+    PARTICIPATION_INDIVIDUAL = 'INDIVIDUAL'
+    PARTICIPATION_CORPORATE = 'CORPORATE'
+    PARTICIPATION_CHOICES = [(PARTICIPATION_INDIVIDUAL, 'Bireysel'), (PARTICIPATION_CORPORATE, 'Kurumsal')]
+
     activity_name = models.CharField(max_length=200)
     activity_description = models.TextField(blank=True)
     activity_date = models.DateTimeField()
     location = models.CharField(max_length=150, blank=True)
+    activity_type = models.CharField('Tür', max_length=20, choices=TYPE_CHOICES, default=TYPE_OTHER)
+    participation_type = models.CharField('Katılım şekli', max_length=20, choices=PARTICIPATION_CHOICES,
+                                          default=PARTICIPATION_INDIVIDUAL)
+    contact_person = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='contact_activities', verbose_name='İletişim kişisi',
+    )
     create_date = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name='created_activities',
@@ -228,3 +276,21 @@ class Activity(models.Model):
 
     def __str__(self):
         return self.activity_name
+
+
+class Notification(models.Model):
+    """Uygulama içi bildirim (task ataması vb.). Oluşturma: core/notifications.py"""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    task = models.ForeignKey(Task, null=True, blank=True, on_delete=models.CASCADE, related_name='notifications')
+    message = models.CharField(max_length=300)
+    is_read = models.BooleanField(default=False)
+    create_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'notification'
+        ordering = ['-create_date', '-id']
+        indexes = [models.Index(fields=['user', 'is_read'], name='notification_user_read_idx')]
+
+    def __str__(self):
+        return f'{self.user_id}: {self.message}'
