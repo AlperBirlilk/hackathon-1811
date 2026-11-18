@@ -1,0 +1,19 @@
+hackatlon-django/core/views.py
+  s_030faaaec88833::t_733fda2b51f47e 46,49,53-70,76-77,101-107,109,111,113-120,122,178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "efc0181e0eca100595575f75982e9757d77e9f67",
+  "prompts": {},
+  "sessions": {
+    "s_030faaaec88833": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_030faaaec88833",
+        "model": "unknown"
+      },
+      "human_author": "TURKCELL\\TCALBIRLIK <alper.birlik@turkcell.com.tr>"
+    }
+  }
+}
