@@ -1,0 +1,25 @@
+hackatlon-django/core/reports.py
+  s_f1098b41f0ed82::t_ab93b386ba0b2a 10,32
+hackatlon-django/core/tests.py
+  s_f1098b41f0ed82::t_d4f7bc58312a92 129-130,134,140-142,146,151-153
+hackatlon-django/core/views.py
+  s_f1098b41f0ed82::t_e913eb90c68623 389
+hackatlon-django/templates/core/task_list.html
+  s_f1098b41f0ed82::t_4e36b203415f51 23-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7b5388c3a0b6d1748be6706b35027c7da88c241a",
+  "prompts": {},
+  "sessions": {
+    "s_f1098b41f0ed82": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1eec0-b683-71a3-8f70-3189f2668d8f",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "TURKCELL\\TCALBIRLIK <alper.birlik@turkcell.com.tr>"
+    }
+  }
+}
