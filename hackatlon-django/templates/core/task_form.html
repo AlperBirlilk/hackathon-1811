@@ -1,21 +1,41 @@
 {% extends "app.html" %}
 {% block title %}Yeni task{% endblock %}
 {% block heading %}Yeni task{% endblock %}
+{% block subheading %}<p class="sub">Kaydettikten sonra form temizlenir; arka arkaya birden fazla task ekleyebilirsiniz.</p>{% endblock %}
 {% block content %}
-<div class="panel" style="max-width:820px">
-  <div class="panel-body" style="padding:20px">
-    <form method="post">{% csrf_token %}
-      {% if form.non_field_errors %}<div class="alert">{{ form.non_field_errors }}</div>{% endif %}
-      <div class="form-grid">
-        {% include "_field.html" with field=form.title full=1 %}
-        {% include "_field.html" with field=form.description full=1 %}
-        {% include "_field.html" with field=form.severity %}
-        {% include "_field.html" with field=form.status %}
-        {% include "_field.html" with field=form.assignees full=1 %}
-      </div>
-      <p class="hint">Birden fazla kişi seçmek için Ctrl tuşuna basılı tutun.</p>
-      <div class="page-actions"><a class="btn ghost" href="{% url 'task_list' %}">Vazgeç</a><button class="btn">Task oluştur</button></div>
-    </form>
+<div class="grid grid-3-1">
+  <div class="panel">
+    <div class="panel-body" style="padding:20px">
+      <form method="post" id="task-create-form" novalidate>{% csrf_token %}
+        <div class="alert" data-error-for="__all__" {% if not form.non_field_errors %}hidden{% endif %}>{{ form.non_field_errors }}</div>
+        <div class="form-grid">
+          {% include "_field.html" with field=form.title full=1 %}
+          {% include "_field.html" with field=form.description full=1 %}
+          {% include "_severity_picker.html" with field=form.severity full=1 %}
+          {% include "_field.html" with field=form.status %}
+          <div></div>
+          {% include "_field.html" with field=form.assignees full=1 %}
+        </div>
+        <p class="hint">Birden fazla kişi seçmek için Ctrl tuşuna basılı tutun. Atananlar bir sonraki task için seçili kalır.</p>
+        <div class="page-actions">
+          <a class="btn ghost" href="{% url 'task_list' %}">İşlere dön</a>
+          <button class="btn" type="submit">Task oluştur</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="panel" style="align-self:start">
+    <div class="panel-head"><h2>Son eklediklerim</h2></div>
+    <div class="panel-body" style="padding-top:4px">
+      <ul class="list" id="recent-tasks">
+        {% for t in recent %}
+        <li class="sev-row {{ t.task_severity|lower }}"><a class="title" href="{% url 'task_detail' t.pk %}">{{ t.task_title }}</a><span class="code">{{ t.code }}</span></li>
+        {% empty %}
+        <li class="empty" data-empty>Henüz task eklemediniz.</li>
+        {% endfor %}
+      </ul>
+    </div>
   </div>
 </div>
 {% endblock %}

@@ -1,0 +1,77 @@
+<!DOCTYPE html><html lang="tr" xmlns:o="urn:schemas-microsoft-com:office:office"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>{{ title }}</title>
+  <!--[if mso]>
+  <xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+  <style>table {border-collapse:collapse;} td, th, p, a {font-family:Arial,Helvetica,sans-serif !important;}</style>
+  <![endif]-->
+</head>
+<body style="margin:0; padding:0; background-color:#edf2f8; color:#17243b; font-family:Arial,Helvetica,sans-serif; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#edf2f8" style="width:100%; background-color:#edf2f8; border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+    <tr><td align="center" style="padding:32px 12px;">
+      <!--[if mso]><table role="presentation" width="680" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+      <table role="presentation" width="100%" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%; max-width:680px; background-color:#ffffff; border:1px solid #dce4ef; border-collapse:collapse; table-layout:fixed; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+        <tr><td bgcolor="#ffffff" style="border-top:4px solid #2463eb; padding:22px 30px 16px; font-family:Arial,Helvetica,sans-serif;">
+          <p style="margin:0; color:#102547; font-size:22px; font-weight:bold; letter-spacing:0.5px; line-height:28px;">{{ brand_name }}</p>
+          {% if brand_tagline %}<p style="margin:8px 0 0; color:#7a8ba3; font-size:8px; font-weight:bold; letter-spacing:2px; line-height:12px;">{{ brand_tagline }}</p>{% endif %}
+        </td></tr>
+        <tr><td bgcolor="#ffffff" style="padding:13px 30px 25px; border-bottom:1px solid #e8edf4; font-family:Arial,Helvetica,sans-serif;">
+          <p style="margin:0 0 9px; color:#2463eb; font-size:10px; font-weight:bold; letter-spacing:1.8px; line-height:16px;">{{ eyebrow }}</p>
+          <h1 style="margin:0 0 11px; color:#17243b; font-size:28px; font-weight:bold; line-height:34px; letter-spacing:-1px;">{{ title }}</h1>
+        </td></tr>
+        <tr><td bgcolor="#ffffff" style="padding:25px 30px; color:#62728a; font-family:Arial,Helvetica,sans-serif; font-size:12px; line-height:20px; word-wrap:break-word;">
+          <p style="color: #162b4b; font-size: 15px; font-weight: 700; margin: 0 0 14px 0;">{{ greeting }}</p>
+          <p style="color: #62728a; font-size: 14px; line-height: 1.6; margin: 0 0 25px 0;">{{ intro }}</p>
+
+          {% if details %}
+          <p style="color: #162b4b; font-size: 16px; font-weight: 700; margin: 0 0 12px 0;">{{ details_title }}</p>
+          <table border="0" cellpadding="0" cellspacing="0" width="100%" style="mso-table-lspace:0pt; mso-table-rspace:0pt; border-collapse: collapse; margin-bottom: 25px; border: 1px solid #dfe7f2; border-radius: 4px; overflow: hidden;">
+            <tbody>
+              {% for label, value in details %}{% cycle '#f5f8fc' '' as row_bg silent %}
+              <tr style="border-bottom: 1px solid #dfe7f2;{% if row_bg %} background-color: {{ row_bg }};{% endif %}">
+                <td {% if row_bg %}bgcolor="{{ row_bg }}" {% endif %}style="border-bottom:1px solid #edf1f7; font-family:Arial,Helvetica,sans-serif; padding: 12px 16px; color: #162b4b; font-size: 13px; font-weight: 700; width: 35%; vertical-align: top;">{{ label }}</td>
+                <td {% if row_bg %}bgcolor="{{ row_bg }}" {% endif %}style="border-bottom:1px solid #edf1f7; font-family:Arial,Helvetica,sans-serif; padding: 12px 16px; color: #62728a; font-size: 13px; font-weight: 600;">{{ value|linebreaksbr }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% endif %}
+
+          {% if cta_url %}
+          <table border="0" cellpadding="0" cellspacing="0" width="100%" style="mso-table-lspace:0pt; mso-table-rspace:0pt; margin-top: 25px; margin-bottom: 25px;">
+            <tr>
+              <td align="center" style="font-family:Arial,Helvetica,sans-serif;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+                  <tr><td align="center" bgcolor="#225ee6" style="background-color:#225ee6; border-radius:6px; padding:13px 20px; font-family:Arial,Helvetica,sans-serif;">
+                    <a href="{{ cta_url }}" target="_blank" style="display:block; color:#ffffff; font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:bold; line-height:20px; text-align:center; text-decoration:none;">{{ cta_label }} →</a>
+                  </td></tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+          {% endif %}
+
+          {% if info_text %}
+          <table border="0" cellpadding="0" cellspacing="0" width="100%" style="mso-table-lspace:0pt; mso-table-rspace:0pt; background-color: #f5f8fc; border-left: 4px solid #2463eb; border-radius: 0 4px 4px 0; margin-bottom: 15px;">
+            <tr>
+              <td style="font-family:Arial,Helvetica,sans-serif; padding: 16px 20px;">
+                <h3 style="color: #162b4b; font-size: 14px; font-weight: 700; margin: 0 0 6px 0;">{{ info_title }}</h3>
+                <p style="color: #5f7088; font-size: 13px; line-height: 1.6; margin: 0;">{{ info_text }}</p>
+              </td>
+            </tr>
+          </table>
+          {% endif %}
+        </td></tr>
+
+        <tr><td bgcolor="#f9fbfd" style="padding:18px 30px; border-top:1px solid #e7edf5; background-color:#f9fbfd; color:#8b98aa; font-family:Arial,Helvetica,sans-serif; font-size:10px; line-height:16px;">
+          {% if footer_owner %}<p style="color: #7a8ca3; font-size: 12px; margin: 0 0 6px 0;">© {{ year }} {{ footer_owner }}. Tüm hakları saklıdır.</p>{% endif %}
+          <p style="color: #7a8ca3; font-size: 12px; margin: 0; line-height: 1.5;">{{ footer_note }}</p>
+        </td></tr>
+      </table>
+      <!--[if mso]></td></tr></table><![endif]-->
+    </td></tr>
+  </table>
+</body>
+</html>

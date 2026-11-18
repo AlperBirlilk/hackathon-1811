@@ -1,6 +1,7 @@
 """Task iş kuralları: oluşturma / güncelleme ve otomatik task_history kaydı."""
 from django.db import transaction
 
+from . import notifications
 from .models import Task, TaskHistory
 
 
@@ -23,6 +24,7 @@ def create_task(*, user, title, description, severity, status, assignees):
         task=task, action_by=user, action_type=TaskHistory.CREATED,
         action_description=f'Task oluşturuldu. Atananlar: {_names(assignees)}',
     )
+    notifications.notify_task_assigned(task, assignees, actor=user)
     return task
 
 
@@ -50,6 +52,7 @@ def update_task(task, *, user, **changes):
         logs.append((TaskHistory.DESCRIPTION_CHANGE, 'Açıklama güncellendi.'))
 
     assignees_changed = False
+    added = set()
     if 'assignees' in changes:
         old = set(task.assignees.all())
         new = set(changes['assignees'])
@@ -73,4 +76,6 @@ def update_task(task, *, user, **changes):
     TaskHistory.objects.bulk_create([
         TaskHistory(task=task, action_by=user, action_type=t, action_description=d) for t, d in logs
     ])
+    if added:
+        notifications.notify_task_assigned(task, added, actor=user)
     return True

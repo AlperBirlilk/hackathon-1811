@@ -34,8 +34,9 @@
           <div class="form-grid">
             {% include "_field.html" with field=form.title full=1 %}
             {% include "_field.html" with field=form.description full=1 %}
-            {% include "_field.html" with field=form.severity %}
+            {% include "_severity_picker.html" with field=form.severity full=1 %}
             {% include "_field.html" with field=form.status %}
+            <div></div>
             {% include "_field.html" with field=form.assignees full=1 %}
           </div>
           <div class="page-actions"><button class="btn">Değişiklikleri kaydet</button></div>

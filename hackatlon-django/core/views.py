@@ -9,12 +9,14 @@ from django.contrib.auth.views import LoginView
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db.models import Case, Count, IntegerField, Q, Value, When
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from . import services
+from . import notifications, services
 from .forms import ActivityForm, ProfileForm, SkillForm, TaskForm, TaskStatusForm
 from .models import Activity, PermissionType, Task, TaskHistory, User, UserPermission, UserSkill
 
@@ -49,6 +51,31 @@ def visible_tasks(user):
 
 def can_edit_task(user, task):
     return user.has_portal_perm(PermissionType.TASK_MANAGEMENT) or task.created_by_id == user.id
+
+
+def can_change_status(user, task):
+    return can_edit_task(user, task) or task.assignees.filter(pk=user.pk).exists()
+
+
+def wants_json(request):
+    return request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+
+def safe_next(request, fallback, *args):
+    nxt = request.POST.get('next') or request.GET.get('next')
+    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()},
+                                               require_https=request.is_secure()):
+        return redirect(nxt)
+    return redirect(fallback, *args)
+
+
+def task_json(task):
+    return {
+        'id': task.pk, 'code': task.code, 'title': task.task_title,
+        'severity': task.task_severity, 'severity_label': task.get_task_severity_display(),
+        'status': task.task_status, 'status_label': task.get_task_status_display(),
+        'url': reverse('task_detail', args=[task.pk]),
+    }
 
 
 def team_with_stats(manager):
@@ -114,11 +141,18 @@ def logout_view(request):
 @login_required
 def dashboard(request):
     user = request.user
-    my_tasks = user.assigned_tasks.all()
+    # İşlerim: bana atanan veya benim oluşturduğum tasklar
+    my_tasks = Task.objects.filter(
+        pk__in=Task.objects.filter(Q(assignees=user) | Q(created_by=user)).values('pk'))
+    by_priority = my_tasks.annotate(sev_rank=SEVERITY_RANK).order_by('sev_rank', '-modified_date')
+    lanes = [
+        (Task.STATUS_OPEN, 'Yapılacak', by_priority.filter(task_status=Task.STATUS_OPEN)),
+        (Task.STATUS_IN_PROGRESS, 'Devam ediyor', by_priority.filter(task_status=Task.STATUS_IN_PROGRESS)),
+        (Task.STATUS_DONE, 'Tamamlandı', my_tasks.filter(task_status=Task.STATUS_DONE)
+         .order_by('-modified_date')[:15]),
+    ]
     ctx = {
-        'pending_tasks': my_tasks.filter(task_status__in=Task.PENDING_STATUSES)
-                                 .annotate(sev_rank=SEVERITY_RANK).order_by('sev_rank', '-modified_date')[:8],
-        'done_tasks': my_tasks.filter(task_status=Task.STATUS_DONE)[:8],
+        'lanes': [(key, label, list(qs.prefetch_related('assignees'))) for key, label, qs in lanes],
         'my_activities': user.activities.filter(activity_date__gte=timezone.now())[:6],
         'stats': {
             'pending': my_tasks.filter(task_status__in=Task.PENDING_STATUSES).count(),
@@ -131,10 +165,12 @@ def dashboard(request):
     if user.is_manager:
         ctx['team'] = team_with_stats(user)
     if user.has_portal_perm(PermissionType.REPORT_ANALYSIS):
-        total = Task.objects.count() or 1
+        task_count = Task.objects.count()
+        total = task_count or 1
         sev = dict(Task.objects.values_list('task_severity').annotate(c=Count('id')))
         sta = dict(Task.objects.values_list('task_status').annotate(c=Count('id')))
         ctx['report'] = {
+            'total': task_count,
             'severity': [(k, label, sev.get(k, 0), round(sev.get(k, 0) * 100 / total))
                          for k, label in Task.SEVERITY_CHOICES],
             'status': [(k, label, sta.get(k, 0), round(sta.get(k, 0) * 100 / total))
@@ -164,12 +200,13 @@ def task_list(request):
     return render(request, 'core/task_list.html', {
         'tasks': qs, 'status_choices': Task.STATUS_CHOICES, 'severity_choices': Task.SEVERITY_CHOICES,
         'f_status': status, 'f_severity': severity, 'q': q,
+        'users': User.objects.filter(is_active=True).order_by('first_name', 'username'),
     })
 
 
 @login_required
 def task_create(request):
-    form = TaskForm(request.POST or None)
+    form = TaskForm(request.POST or None, initial={'assignees': [request.user.pk]})
     if not request.user.has_portal_perm(PermissionType.TASK_MANAGEMENT):
         # Yetkisi olmayan kullanıcı yalnızca kendine task açabilir
         form.fields['assignees'].queryset = User.objects.filter(pk=request.user.pk)
@@ -179,9 +216,16 @@ def task_create(request):
             user=request.user, title=d['title'], description=d['description'],
             severity=d['severity'], status=d['status'], assignees=list(d['assignees']),
         )
+        if wants_json(request):
+            return JsonResponse({'ok': True, 'message': f'{task.code} oluşturuldu.', 'task': task_json(task)})
         messages.success(request, f'{task.code} oluşturuldu.')
-        return redirect('task_detail', pk=task.pk)
-    return render(request, 'core/task_form.html', {'form': form, 'is_new': True})
+        return redirect('task_create')
+    if request.method == 'POST' and wants_json(request):
+        return JsonResponse({'ok': False, 'errors': form.errors.get_json_data()}, status=400)
+    return render(request, 'core/task_form.html', {
+        'form': form,
+        'recent': Task.objects.filter(created_by=request.user).order_by('-id')[:8],
+    })
 
 
 @login_required
@@ -218,16 +262,66 @@ def task_detail(request, pk):
 @require_POST
 def task_status(request, pk):
     task = get_object_or_404(visible_tasks(request.user), pk=pk)
-    if not (can_edit_task(request.user, task) or task.assignees.filter(pk=request.user.pk).exists()):
+    if not can_change_status(request.user, task):
+        if wants_json(request):
+            return JsonResponse({'ok': False, 'error': 'Bu taskın durumunu değiştirme yetkiniz yok.'}, status=403)
         raise PermissionDenied
     form = TaskStatusForm(request.POST)
-    if form.is_valid():
-        if services.update_task(task, user=request.user, status=form.cleaned_data['status']):
-            messages.success(request, f'{task.code} durumu güncellendi: {task.get_task_status_display()}')
-    nxt = request.POST.get('next')
-    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
-        return redirect(nxt)
-    return redirect('task_detail', pk=task.pk)
+    if not form.is_valid():
+        if wants_json(request):
+            return JsonResponse({'ok': False, 'error': 'Geçersiz durum.'}, status=400)
+        return redirect('task_detail', pk=task.pk)
+    changed = services.update_task(task, user=request.user, status=form.cleaned_data['status'])
+    if wants_json(request):
+        return JsonResponse({'ok': True, 'changed': changed, 'task': task_json(task)})
+    if changed:
+        messages.success(request, f'{task.code} durumu güncellendi: {task.get_task_status_display()}')
+    return safe_next(request, 'task_detail', task.pk)
+
+
+BULK_LABELS = {'status': 'durum', 'severity': 'önem', 'assign': 'atama', 'unassign': 'atama'}
+
+
+@login_required
+@require_POST
+def task_bulk(request):
+    """Seçili tasklara toplu işlem: status:<X>, severity:<X>, assign, unassign."""
+    user = request.user
+    ids = [int(i) for i in request.POST.getlist('ids') if i.isdigit()]
+    kind, _, value = request.POST.get('op', '').partition(':')
+    valid = {'status': dict(Task.STATUS_CHOICES), 'severity': dict(Task.SEVERITY_CHOICES)}
+    target = None
+    if kind in ('assign', 'unassign'):
+        uid = request.POST.get('user', '')
+        target = User.objects.filter(pk=int(uid), is_active=True).first() if uid.isdigit() else None
+    if (not ids or kind not in BULK_LABELS or (kind in valid and value not in valid[kind])
+            or (kind in ('assign', 'unassign') and target is None)):
+        messages.error(request, 'Toplu işlem için en az bir task ve geçerli bir işlem seçin.')
+        return safe_next(request, 'task_list')
+
+    changed = skipped = 0
+    for task in visible_tasks(user).filter(pk__in=ids).prefetch_related('assignees'):
+        if kind == 'status':
+            if not can_change_status(user, task):
+                skipped += 1
+                continue
+            changed += services.update_task(task, user=user, status=value)
+            continue
+        if not can_edit_task(user, task):
+            skipped += 1
+            continue
+        if kind == 'severity':
+            changed += services.update_task(task, user=user, severity=value)
+        else:
+            current = set(task.assignees.all())
+            new = current | {target} if kind == 'assign' else current - {target}
+            changed += services.update_task(task, user=user, assignees=list(new))
+
+    msg = f'{changed} taskın {BULK_LABELS[kind]} bilgisi güncellendi.'
+    if skipped:
+        msg += f' Yetkiniz olmadığı için {skipped} task atlandı.'
+    (messages.warning if skipped else messages.success)(request, msg)
+    return safe_next(request, 'task_list')
 
 
 # --------------------------------------------------------------------------- activities
@@ -251,6 +345,7 @@ def activity_create(request):
         activity.created_by = request.user
         activity.save()
         form.save_m2m()
+        notifications.notify_activity_invited(activity, activity.attendees.all(), actor=request.user)
         messages.success(request, f'"{activity.activity_name}" etkinliği oluşturuldu.')
         return redirect('activity_list')
     return render(request, 'core/activity_form.html', {'form': form})

@@ -9,10 +9,10 @@
     </div>
     <div class="panel-body">
       {% for a in upcoming %}
-      <div class="event">
+      <div class="event" id="activity-{{ a.pk }}">
         <div class="event-date"><div class="d">{{ a.activity_date|date:"j" }}</div><div class="m">{{ a.activity_date|date:"M" }}</div></div>
         <div class="info">
-          <div class="n">{{ a.activity_name }}</div>
+          <div class="n">{{ a.activity_name }}{% if a.id in my_ids %} <span class="badge st-done" style="margin-left:6px">Katılıyorsunuz</span>{% endif %}</div>
           <div class="meta">{{ a.activity_date|date:"l, H:i" }}{% if a.location %}, {{ a.location }}{% endif %}</div>
           {% if a.activity_description %}<div style="font-size:13px;color:var(--ink-2);margin-top:2px">{{ a.activity_description }}</div>{% endif %}
         </div>
@@ -28,7 +28,7 @@
     <div class="panel-head"><h2>Geçmiş etkinlikler</h2></div>
     <div class="panel-body">
       <ul class="list">
-        {% for a in past %}<li><span class="title">{{ a.activity_name }}</span><span class="muted" style="font-size:12px;white-space:nowrap">{{ a.activity_date|date:"j M" }}</span></li>
+        {% for a in past %}<li id="activity-{{ a.pk }}"><span class="title">{{ a.activity_name }}</span><span class="muted" style="font-size:12px;white-space:nowrap">{{ a.activity_date|date:"j M" }}</span></li>
         {% empty %}<li class="empty">Geçmiş etkinlik yok.</li>{% endfor %}
       </ul>
     </div>

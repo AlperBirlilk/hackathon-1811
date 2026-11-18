@@ -1,0 +1,11 @@
+<fieldset class="field sev-picker{% if full %} full{% endif %}" data-field="severity">
+  <legend>{{ field.label }}</legend>
+  <div class="sev-options">
+    {% for radio in field %}
+    <label class="sev-opt sev-opt-{{ radio.data.value|lower }}">
+      {{ radio.tag }}<span class="sev-dot" aria-hidden="true"></span>{{ radio.choice_label }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="err" data-error-for="severity">{% for e in field.errors %}{{ e }}{% endfor %}</div>
+</fieldset>

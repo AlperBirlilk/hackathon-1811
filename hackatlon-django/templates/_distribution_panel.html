@@ -1,0 +1,20 @@
+{% comment %}
+  Dağılım bileşeni. Parametreler:
+    title  – panel başlığı
+    rows   – (key, label, count, pct) listesi
+    total  – toplam task sayısı
+    filter – task listesinde filtrelenecek GET parametresi adı (status / severity)
+{% endcomment %}
+<div class="panel">
+  <div class="panel-head"><h2>{{ title }}</h2><div class="actions"><span class="muted" style="font-size:12px">Toplam {{ total }} task</span></div></div>
+  <div class="panel-body">
+    {% for key, label, count, pct in rows %}
+    <a class="bar-row bar-link" href="{% url 'task_list' %}?{{ filter }}={{ key }}" title="{{ label }} tasklarını listele">
+      <span>{{ label }}</span>
+      <div class="bar {{ key|lower }}"><i style="width:{{ pct }}%"></i></div>
+      <span>{{ count }}</span>
+      <span class="muted">%{{ pct }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>

@@ -12,6 +12,7 @@ urlpatterns = [
     path('tasks/new/', views.task_create, name='task_create'),
     path('tasks/<int:pk>/', views.task_detail, name='task_detail'),
     path('tasks/<int:pk>/status/', views.task_status, name='task_status'),
+    path('tasks/bulk/', views.task_bulk, name='task_bulk'),
 
     path('activities/', views.activity_list, name='activity_list'),
     path('activities/new/', views.activity_create, name='activity_create'),

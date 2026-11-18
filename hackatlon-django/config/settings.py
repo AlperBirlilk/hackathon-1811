@@ -60,6 +60,12 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            # Kilitli DB'de hemen hata vermek yerine bekle (DB Browser vb. açıkken).
+            'timeout': 20,
+            # DB dosyası WAL moduna alındı (bkz. README): okuyucular yazanı engellemez.
+            'init_command': 'PRAGMA synchronous=NORMAL;',
+        },
     }
 }
 
@@ -79,6 +85,31 @@ LOCAL_AUTH_ENABLED = os.environ.get('LOCAL_AUTH_ENABLED', '1' if DEBUG else '0')
 AUTHENTICATION_BACKENDS = ['core.ldap_backend.LDAPBackend']
 if LOCAL_AUTH_ENABLED:
     AUTHENTICATION_BACKENDS.append('django.contrib.auth.backends.ModelBackend')
+
+# --- E-posta bildirimleri (saportal-be ile aynı SMTP: smtp.turkcell.com.tr:25, auth/TLS yok)
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('MAIL_HOST', 'smtp.turkcell.com.tr')
+EMAIL_PORT = int(os.environ.get('MAIL_PORT', '25'))
+EMAIL_HOST_USER = os.environ.get('MAIL_USERNAME', '')
+EMAIL_HOST_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('MAIL_STARTTLS', '0') == '1'
+EMAIL_TIMEOUT = int(os.environ.get('MAIL_TIMEOUT', '15'))
+DEFAULT_FROM_EMAIL = os.environ.get('MAIL_FROM', 'TEAM-SMA@smtp.turkcell.com.tr')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+MAIL_ENABLED = os.environ.get('MAIL_ENABLED', '1') == '1'
+MAIL_ASYNC = os.environ.get('MAIL_ASYNC', '1') == '1'            # SMTP'yi arka planda çağır
+MAIL_NOTIFY_SELF = os.environ.get('MAIL_NOTIFY_SELF', '1') == '1'  # kendini atayana da mail gitsin
+# Doluysa tüm mailler bu adrese yönlendirilir (test modu, saportal-be'deki test-recipient gibi)
+MAIL_TEST_RECIPIENT = os.environ.get('MAIL_TEST_RECIPIENT', '')
+# Sadece bu domainlere mail gönderilir (demo hesapları / dış adreslere sızıntıyı engeller)
+MAIL_ALLOWED_DOMAINS = [d.strip().lower() for d in
+                        os.environ.get('MAIL_ALLOWED_DOMAINS', 'turkcell.com.tr').split(',') if d.strip()]
+MAIL_BRAND_NAME = os.environ.get('MAIL_BRAND_NAME', 'Hackatlon Bilgilendirme')
+MAIL_BRAND_TAGLINE = os.environ.get('MAIL_BRAND_TAGLINE', '')      # boşsa gösterilmez
+MAIL_FOOTER_OWNER = os.environ.get('MAIL_FOOTER_OWNER', '')        # boşsa telif satırı gösterilmez
+# Maillerdeki linklerin başına eklenir
+PORTAL_BASE_URL = os.environ.get('PORTAL_BASE_URL', 'http://127.0.0.1:8000')
 
 LOGGING = {
     'version': 1,

@@ -6,7 +6,8 @@ from .models import Activity, Task, User, UserSkill
 class TaskForm(forms.Form):
     title = forms.CharField(label='Başlık', max_length=200)
     description = forms.CharField(label='Açıklama', widget=forms.Textarea(attrs={'rows': 4}), required=False)
-    severity = forms.ChoiceField(label='Önem', choices=Task.SEVERITY_CHOICES, initial=Task.SEVERITY_MEDIUM)
+    severity = forms.ChoiceField(label='Önem', choices=Task.SEVERITY_CHOICES, initial=Task.SEVERITY_MEDIUM,
+                                 widget=forms.RadioSelect)
     status = forms.ChoiceField(label='Durum', choices=Task.STATUS_CHOICES, initial=Task.STATUS_OPEN)
     assignees = forms.ModelMultipleChoiceField(
         label='Atananlar', queryset=User.objects.filter(is_active=True).order_by('first_name'),
