@@ -1,19 +1,26 @@
 ---
 name: task-change
-description: Task'a yeni bir alan veya davranış ekler (son tarih, SLA, yedek sorumlu, bildirim, devir gibi). Geçmiş kaydını ve yetki kurallarını koruyarak services katmanından yapar. Task modeli, task formu veya task iş kuralı değişikliklerinde kullan.
+description: Task'a yeni bir alan veya davranış ekler (son tarih, SLA, yedek sorumlu, bildirim, devir gibi). İş kuralı Java TaskService'te (eklemeli schema kolonu, history action tipi, bildirim), arayüz Django form/template'inde. Task alanı, task formu veya task iş kuralı değişikliklerinde kullan.
 ---
 
 # Task davranışı değiştirme
 
-Task yazma işlemleri `core/services.py` dışında yapılmaz. Bu skill o katmanı genişletir.
+Task'ın sahibi Java backend'dir. Task yazma işlemleri yalnızca `hackatlon-be` → `task/TaskService` üzerinden yapılır; Django yalnızca formu ve gösterimi değiştirir. İki tarafa dokunuyorsa `/fullstack-feature` akışıyla (`backend-dev` ∥ `frontend-dev`) yürütülür.
 
-1. **Model gerekiyor mu?** Gerekiyorsa önce **migration koordinasyonu** (root `CLAUDE.md`): ekibe haber ver → `git pull origin main` → `models.py` değişikliği → `makemigrations core` → migration'ı hemen commit ve push et. Admin'e (`core/admin.py`) alanı ekle.
-2. **Service:**
-   - `create_task(...)`: yeni parametreyi keyword-only olarak ekle (`*, ..., due_date=None`); varsayılanı mevcut çağrıları bozmasın (`seed.py`, `views.task_create`).
-   - `update_task(task, *, user, **changes)`: yeni alan için mevcut dallarla aynı desende bir `if '<alan>' in changes and ... != ...` dalı yaz; `logs` listesine `(TaskHistory.<TİP>, 'Türkçe açıklama')` ekle.
-   - Yeni history tipi gerekiyorsa `TaskHistory.ACTION_CHOICES` listesine ekle. Bu da bir migration demektir; 1. adımla birlikte yap.
-   - Bildirim gerekiyorsa (atama vb.) aynı `transaction.atomic` bloğu içinde oluştur. İşlemi yapan kişiye kendi işlemi için bildirim gönderme.
-3. **Form ve view:** `core/forms.py` → `TaskForm` alanı; `views.task_create` ve `views.task_detail` içinde `initial` sözlüğü ve `services` çağrısı.
-4. **Template:** `task_form.html`, `task_detail.html`, `task_list.html`; gerekiyorsa `dashboard.html`.
-5. **Seed:** `seed.py` → `TASKS` verisine yeni alanı ekle (demo için anlamlı değerlerle); idempotent kalsın.
-6. **Doğrula:** `manage.py test core`, `makemigrations --check --dry-run`, `seed --reset`; ardından task detayındaki geçmişte yeni kaydın Türkçe göründüğünü kontrol et.
+1. **Sözleşme:** `docs/api-contract.md` → task bölümünde yeni alanı `POST /api/tasks`, `PATCH /api/tasks/{id}`, `GET` yanıtları ve (gerekiyorsa) history action tipi listesine ekle.
+2. **Şema** (`schema.sql`, yalnızca eklemeli; önce ekibe duyur):
+   ```sql
+   ALTER TABLE task ADD COLUMN IF NOT EXISTS due_date DATE;
+   ```
+   Demo değerleri `data.sql`'e idempotent biçimde.
+3. **Java:**
+   - Record DTO'lar (`TaskDto`, `CreateTaskRequest`, `UpdateTaskRequest`) ve `TaskRepository` SQL'i (parametreli).
+   - `TaskService`: yeni alan için değişiklik varsa ayrı bir dal; aynı `@Transactional` içinde `task_history` kaydı (yeni action tipi sabiti + Türkçe açıklama).
+   - Atama/devir gibi kişiyi etkileyen değişiklikte aynı transaction'da `notification`; işlemi yapan kişiye kendi işlemi için bildirim gitmez.
+   - Görünürlük kuralı değişiyorsa (ör. yedek sorumlu görür) scope sorgusunu tek yerde güncelle; liste, detay, dashboard ve export aynı kuralı kullanır.
+   - MockMvc testi: alan yazılıyor, history kaydı oluşuyor, yetkisiz kullanıcı 403/404.
+4. **Django:**
+   - `core/api_client.py`: create/update payload'una alan.
+   - `core/forms.py` → `TaskForm` alanı; `views.task_create` / `views.task_detail` içinde `initial` ve `api_client` çağrısı.
+   - Template: `task_form.html`, `task_detail.html`, `task_list.html`; gerekiyorsa `dashboard.html`. Geçmişteki yeni action tipinin Türkçe etiketi.
+5. **Doğrula:** `./mvnw test`, `manage.py test core`; iki sunucuyla task oluştur/güncelle, `/api/tasks/{id}/history` ve detay sayfasındaki geçmişte yeni kaydın Türkçe göründüğünü kontrol et.

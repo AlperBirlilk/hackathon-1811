@@ -18,7 +18,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git switch:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(./mvnw:*)",
+      "Bash(mvn:*)",
+      "Bash(curl -s http://127.0.0.1:8080:*)"
     ],
     "deny": [
       "Read(**/.env)",
@@ -26,7 +29,8 @@
       "Bash(rm -rf:*)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
-      "Bash(git reset --hard:*)"
+      "Bash(git reset --hard:*)",
+      "Read(**/application-local*)"
     ]
   }
 }

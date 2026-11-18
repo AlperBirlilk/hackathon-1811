@@ -41,7 +41,7 @@ LDAP veya yerel login başarılı olduktan sonra Django tarafından çağrılır
 Pasif kullanıcı için 403 döner.
 
 ### `GET /internal/dev/token?username=yonetici` (yalnızca geliştirme)
-`{ "token": "<jwt>", "user": Me }`. curl testleri ve MCP demosu için.
+`{ "token": "<jwt>", "userId": 2, "username": "yonetici" }` (12 saat geçerli). curl testleri ve MCP demosu için.
 
 ## Kullanıcı ve ekip
 

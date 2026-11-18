@@ -3,14 +3,13 @@ paths:
   - "hackatlon-django/**/*.py"
 ---
 
-# Django kuralları
+# Django kuralları (frontend / BFF)
 
-- Task oluşturma ve güncelleme **yalnızca** `core/services.py` üzerinden yapılır. View içinde `task.save()`, `task.assignees.set()` ya da `Task.objects.create()` kullanılmaz.
-- Task sorguları `visible_tasks(user)` ile başlar. Tekil nesne `get_object_or_404(<scoped qs>, pk=pk)` ile alınır.
-- Yetki isteyen her view `@portal_perm_required(PermissionType.X)` ya da `@login_required` + açık bir kontrol kullanır. Kontrol template'te değil, sunucu tarafında yapılır.
+- **Domain için ORM yok.** Task, etkinlik, ekip, yetki, yetkinlik ve bildirim verisi yalnızca `core/api_client.py` üzerinden okunur ve yazılır. `Task.objects`, `core/services.py` ve diğer domain modelleri yeni kodda kullanılmaz; kullanımdan kalkıyorlar.
+- View içinde `requests` / `httpx` doğrudan çağrılmaz; yeni endpoint için `api_client`'a sözleşmeyle (`docs/api-contract.md`) birebir bir fonksiyon eklenir.
+- API hataları view'da yakalanır ve kullanıcıya `messages.error(request, e.message)` ile Türkçe gösterilir. 404 → `Http404`, 403 → `PermissionDenied`, 401 → login'e yönlendirme (`api_client` yapar).
+- Yetki isteyen her view `@portal_perm_required(<kod>)` ya da `@login_required` kullanır. Asıl yetki kontrolü Java'dadır, ama Django da sayfayı yetkisize açmaz.
 - Durum değiştiren view'lar `@require_POST` ile korunur ve PRG deseni izlenir: `messages` + `redirect`.
-- Liste sorgularında `select_related` / `prefetch_related` kullanılır (N+1 yok).
-- Raw SQL (`.raw()`, `cursor.execute`) ve SQLite'a özgü fonksiyonlar yok; ileride DuckDB'ye geçişi zorlaştırmamak için ORM kullanılır.
-- Model değişikliği: önce ekibe haber ver → `git pull` → `makemigrations` → migration dosyasını hemen commit ve push et. Mevcut migration dosyaları düzenlenmez.
-- `seed.py` idempotent kalır (`get_or_create` / `update_or_create`).
-- Yeni sayfa veya yetki kuralı eklendiğinde `core/tests.py` → `PageRenderTests` güncellenir.
+- JWT session'da kalır; template context'ine, JS'e veya log'a konmaz.
+- Migration'lar yalnızca auth/session içindir; domain modeli eklenmez veya değiştirilmez.
+- Yeni sayfa veya yetki kuralı eklendiğinde `core/tests.py` güncellenir; `api_client` mock'lanır.
