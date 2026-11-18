@@ -138,6 +138,8 @@
           var medium = createForm.querySelector('input[name=severity][value=MEDIUM]');
           if (medium) medium.checked = true;
           createForm.elements.status.value = 'OPEN';
+          if (createForm.elements.due_date) createForm.elements.due_date.value = '';
+          if (createForm.elements.backup_assignee) createForm.elements.backup_assignee.value = '';
           addRecent(task);
           toast(res.data.message, null, { href: task.url, text: 'Görüntüle' });
           createForm.elements.title.focus();
@@ -168,7 +170,26 @@
       if (!el) return;
       var v = Math.max(0, (parseInt(el.textContent, 10) || 0) + delta);
       el.textContent = v;
-      if (name === 'critical') el.classList.toggle('crit', v > 0);
+      if (name === 'critical' || name === 'overdue') el.classList.toggle('crit', v > 0);
+    };
+
+    // Son tarihi geçmiş kart tamamlanınca gecikmiş sayılmaz; geri alınınca tekrar gecikmiş olur
+    var syncOverdue = function (card, isPending) {
+      if (!card.dataset.due || new Date(card.dataset.due) >= new Date()) return false;
+      var badge = card.querySelector('[data-overdue-badge]');
+      if (isPending && !badge) {
+        badge = document.createElement('span');
+        badge.className = 'badge overdue';
+        badge.setAttribute('data-overdue-badge', '');
+        badge.textContent = 'Gecikmiş';
+        var code = card.querySelector('.card-meta .code');
+        code.parentNode.insertBefore(badge, code.nextSibling);
+      } else if (!isPending && badge) {
+        badge.remove();
+      }
+      var due = card.querySelector('.card-meta .due');
+      if (due) due.classList.toggle('red', isPending);
+      return true;
     };
 
     var adjustStats = function (card, from, to) {
@@ -179,6 +200,7 @@
       bump('pending', d);
       bump('done', -d);
       if (card.dataset.severity === 'CRITICAL') bump('critical', d);
+      if (syncOverdue(card, isPending)) bump('overdue', d);
     };
 
     var moveCard = function (card, lane, before, fromButton) {

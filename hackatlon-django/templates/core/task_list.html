@@ -13,8 +13,11 @@
       <select name="severity" data-autosubmit aria-label="Önem"><option value="">Tüm önem dereceleri</option>
         {% for k, v in severity_choices %}<option value="{{ k }}" {% if f_severity == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
       </select>
+      <select name="overdue" data-autosubmit aria-label="Son tarih"><option value="">Tüm son tarihler</option>
+        <option value="1" {% if f_overdue %}selected{% endif %}>Gecikmiş</option>
+      </select>
       <button class="btn ghost">Ara</button>
-      {% if q or f_status or f_severity %}<a class="btn ghost" href="{% url 'task_list' %}">Filtreleri temizle</a>{% endif %}
+      {% if q or f_status or f_severity or f_overdue %}<a class="btn ghost" href="{% url 'task_list' %}">Filtreleri temizle</a>{% endif %}
     </form>
     <div class="actions">
       {% if tasks %}<button type="button" class="btn sm ghost" data-bulk-toggle aria-pressed="false">Toplu işlem</button>{% endif %}
@@ -43,7 +46,7 @@
     <table class="table bulk-table">
       <thead><tr>
         <th class="sel"><input type="checkbox" data-bulk-all aria-label="Tümünü seç"></th>
-        <th>Başlık</th><th>Önem</th><th>Durum</th><th>Atananlar</th><th>Son güncelleme</th>
+        <th>Başlık</th><th>Önem</th><th>Durum</th><th>Atananlar</th><th>Son tarih</th><th>Son güncelleme</th>
       </tr></thead>
       <tbody>
       {% for t in tasks %}
@@ -52,11 +55,12 @@
           <td class="sev-row {{ t.task_severity|lower }}"><a href="{% url 'task_detail' t.pk %}">{{ t.task_title }}</a> <span class="code">{{ t.code }}</span></td>
           <td><span class="badge sev-{{ t.task_severity|lower }}">{{ t.get_task_severity_display }}</span></td>
           <td><span class="badge st-{{ t.task_status|lower }}">{{ t.get_task_status_display }}</span></td>
-          <td><div class="avatars">{% for u in t.assignees.all %}<span class="avatar" title="{{ u.display_name }}">{{ u.initials }}</span>{% empty %}<span class="muted">Atanmamış</span>{% endfor %}</div></td>
+          <td><div class="avatars">{% for u in t.assignees.all %}<span class="avatar" title="{{ u.display_name }}">{{ u.initials }}</span>{% empty %}<span class="muted">Atanmamış</span>{% endfor %}</div>{% if t.backup_assignee %}<div class="muted backup-note">Yedek: {{ t.backup_assignee.display_name }}</div>{% endif %}</td>
+          <td style="white-space:nowrap">{% if t.due_date %}<span class="{% if t.is_overdue %}red{% else %}muted{% endif %}">{{ t.due_date|date:"j M, H:i" }}</span>{% if t.is_overdue %} <span class="badge overdue">Gecikmiş</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
           <td class="muted" style="white-space:nowrap">{{ t.modified_date|date:"j M, H:i" }}</td>
         </tr>
       {% empty %}
-        <tr><td colspan="6"><div class="empty">{% if q or f_status or f_severity %}Bu filtrelere uyan task yok.{% else %}Henüz task yok. <a href="{% url 'task_create' %}">İlk taskı oluşturun</a>.{% endif %}</div></td></tr>
+        <tr><td colspan="7"><div class="empty">{% if q or f_status or f_severity or f_overdue %}Bu filtrelere uyan task yok.{% else %}Henüz task yok. <a href="{% url 'task_create' %}">İlk taskı oluşturun</a>.{% endif %}</div></td></tr>
       {% endfor %}
       </tbody>
     </table>

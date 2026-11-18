@@ -9,6 +9,7 @@
         <div class="avatar lg" style="margin:0 auto 12px">{{ target.initials }}</div>
         <h2 style="font-size:18px">{{ target.display_name }}</h2>
         <p class="muted" style="margin:2px 0 18px">{{ target.title|default:"Ünvan girilmemiş" }}</p>
+        {% if target.is_on_leave %}<p style="margin:-10px 0 16px"><span class="badge leave">İzinli</span></p>{% endif %}
         <dl class="kv" style="text-align:left">
           <dt>Kullanıcı adı</dt><dd>{{ target.username }}</dd>
           <dt>Giriş türü</dt><dd>{% if target.auth_source == 'LDAP' %}Kurumsal hesap (LDAP){% else %}Yerel hesap{% endif %}</dd>
@@ -70,6 +71,8 @@
             {% include "_field.html" with field=profile_form.phone %}
             {% include "_field.html" with field=profile_form.location full=1 %}
             {% include "_field.html" with field=profile_form.bio full=1 %}
+            {% include "_field.html" with field=profile_form.is_on_leave full=1 %}
+            <p class="hint full field-hint">{{ profile_form.is_on_leave.help_text }}</p>
           </div>
           <div class="page-actions"><button class="btn">Bilgilerimi kaydet</button></div>
         </form>

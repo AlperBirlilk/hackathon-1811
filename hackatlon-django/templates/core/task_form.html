@@ -13,8 +13,10 @@
           {% include "_field.html" with field=form.description full=1 %}
           {% include "_severity_picker.html" with field=form.severity full=1 %}
           {% include "_field.html" with field=form.status %}
-          <div></div>
+          {% include "_field.html" with field=form.due_date %}
+          <p class="hint full field-hint">{{ form.due_date.help_text }}</p>
           {% include "_field.html" with field=form.assignees full=1 %}
+          {% if 'backup_assignee' in form.fields %}{% include "_field.html" with field=form.backup_assignee %}{% endif %}
         </div>
         <p class="hint">Birden fazla kişi seçmek için Ctrl tuşuna basılı tutun. Atananlar bir sonraki task için seçili kalır.</p>
         <div class="page-actions">

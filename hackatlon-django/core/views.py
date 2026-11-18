@@ -94,8 +94,15 @@ def task_json(task):
         'id': task.pk, 'code': task.code, 'title': task.task_title,
         'severity': task.task_severity, 'severity_label': task.get_task_severity_display(),
         'status': task.task_status, 'status_label': task.get_task_status_display(),
+        'due_date': timezone.localtime(task.due_date).isoformat() if task.due_date else None,
+        'is_overdue': task.is_overdue,
         'url': reverse('task_detail', args=[task.pk]),
     }
+
+
+def overdue_q():
+    """Gecikmiş: tamamlanmamış ve son tarihi geçmiş task'lar."""
+    return Q(task_status__in=Task.PENDING_STATUSES, due_date__lt=timezone.now())
 
 
 def team_queryset_for(user):
@@ -192,7 +199,12 @@ def dashboard(request):
             'critical': my_tasks.filter(task_status__in=Task.PENDING_STATUSES,
                                         task_severity=Task.SEVERITY_CRITICAL).count(),
             'activities': user.activities.filter(activity_date__gte=timezone.now()).count(),
+            'overdue': my_tasks.filter(overdue_q()).count(),
         },
+        'handover': list(
+            handover_tasks_for(user).annotate(sev_rank=SEVERITY_RANK).order_by('sev_rank', 'due_date')
+            .prefetch_related('assignees')
+        ),
     }
     if user.is_manager:
         ctx['team'] = team_with_stats(user)
@@ -219,19 +231,22 @@ def dashboard(request):
 
 @login_required
 def task_list(request):
-    qs = visible_tasks(request.user).prefetch_related('assignees')
+    qs = visible_tasks(request.user).select_related('backup_assignee').prefetch_related('assignees')
     status = request.GET.get('status')
     severity = request.GET.get('severity')
+    overdue = request.GET.get('overdue') == '1'
     q = request.GET.get('q', '').strip()
     if status:
         qs = qs.filter(task_status=status)
     if severity:
         qs = qs.filter(task_severity=severity)
+    if overdue:
+        qs = qs.filter(overdue_q())
     if q:
         qs = qs.filter(Q(task_title__icontains=q) | Q(task_description__icontains=q))
     return render(request, 'core/task_list.html', {
         'tasks': qs, 'status_choices': Task.STATUS_CHOICES, 'severity_choices': Task.SEVERITY_CHOICES,
-        'f_status': status, 'f_severity': severity, 'q': q,
+        'f_status': status, 'f_severity': severity, 'f_overdue': overdue, 'q': q,
         'users': User.objects.filter(is_active=True).order_by('first_name', 'username'),
     })
 
@@ -242,11 +257,14 @@ def task_create(request):
     if not request.user.has_portal_perm(PermissionType.TASK_MANAGEMENT):
         # Yetkisi olmayan kullanıcı yalnızca kendine task açabilir
         form.fields['assignees'].queryset = User.objects.filter(pk=request.user.pk)
+        # ...ve yedek sorumlu atayamaz
+        del form.fields['backup_assignee']
     if request.method == 'POST' and form.is_valid():
         d = form.cleaned_data
         task = services.create_task(
             user=request.user, title=d['title'], description=d['description'],
             severity=d['severity'], status=d['status'], assignees=list(d['assignees']),
+            due_date=d.get('due_date'), backup_assignee=d.get('backup_assignee'),
         )
         if wants_json(request):
             return JsonResponse({'ok': True, 'message': f'{task.code} oluşturuldu.', 'task': task_json(task)})
@@ -262,7 +280,8 @@ def task_create(request):
 
 @login_required
 def task_detail(request, pk):
-    task = get_object_or_404(visible_tasks(request.user).prefetch_related('assignees'), pk=pk)
+    task = get_object_or_404(
+        visible_tasks(request.user).select_related('backup_assignee').prefetch_related('assignees'), pk=pk)
     editable = can_edit_task(request.user, task)
     form = None
     if editable:
@@ -270,6 +289,9 @@ def task_detail(request, pk):
             'title': task.task_title, 'description': task.task_description,
             'severity': task.task_severity, 'status': task.task_status,
             'assignees': task.assignees.all(),
+            'due_date': (timezone.localtime(task.due_date).strftime('%Y-%m-%dT%H:%M')
+                         if task.due_date else None),
+            'backup_assignee': task.backup_assignee_id,
         }
         form = TaskForm(request.POST or None, initial=initial)
         if request.method == 'POST' and form.is_valid():
@@ -277,6 +299,7 @@ def task_detail(request, pk):
             changed = services.update_task(
                 task, user=request.user, title=d['title'], description=d['description'],
                 severity=d['severity'], status=d['status'], assignees=list(d['assignees']),
+                due_date=d['due_date'], backup_assignee=d['backup_assignee'],
             )
             messages.success(request, 'Task güncellendi.' if changed else 'Değişiklik yok.')
             return redirect('task_detail', pk=task.pk)
@@ -286,6 +309,8 @@ def task_detail(request, pk):
         'task': task, 'form': form, 'editable': editable,
         'history': task.history.select_related('action_by'),
         'is_assignee': task.assignees.filter(pk=request.user.pk).exists(),
+        'can_status': can_change_status(request.user, task),
+        'is_handover': is_handover(task, request.user),
         'status_choices': Task.STATUS_CHOICES,
     })
 
@@ -439,7 +464,10 @@ def team_remove(request, user_id):
 
 @portal_perm_required(PermissionType.ROLE_MANAGEMENT)
 def member_permissions(request, user_id):
-    member = get_object_or_404(User, pk=user_id, manager=request.user)
+    # Yönetici kendi ekibini, direktör herkesi düzenler; kimse kendi yetkilerini düzenleyemez
+    member = get_object_or_404(team_queryset_for(request.user), pk=user_id)
+    if member.pk == request.user.pk:
+        raise PermissionDenied
     all_perms = PermissionType.objects.all()
     if request.method == 'POST':
         selected = set(int(i) for i in request.POST.getlist('permissions') if i.isdigit())
@@ -466,7 +494,7 @@ def member_permissions(request, user_id):
 def profile(request, user_id=None):
     if user_id and user_id != request.user.pk:
         target = get_object_or_404(User, pk=user_id)
-        if not (request.user.is_superuser or target.manager_id == request.user.pk):
+        if not (request.user.is_director or target.manager_id == request.user.pk):
             raise PermissionDenied
         own = False
     else:

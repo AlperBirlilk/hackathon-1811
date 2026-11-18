@@ -10,7 +10,31 @@
   <div><div class="value{% if stats.critical %} crit{% endif %}" data-stat="critical">{{ stats.critical }}</div><div class="label">Kritik öncelikli</div></div>
   <div><div class="value" data-stat="done">{{ stats.done }}</div><div class="label">Tamamlanan</div></div>
   <div><div class="value">{{ stats.activities }}</div><div class="label">Yaklaşan etkinlik</div></div>
+  <div><a class="summary-link" href="{% url 'task_list' %}?overdue=1"><div class="value{% if stats.overdue %} crit{% endif %}" data-stat="overdue">{{ stats.overdue }}</div><div class="label">Gecikmiş</div></a></div>
 </section>
+
+{% if handover %}
+<section class="panel section" aria-label="Devralınan işler">
+  <div class="panel-head"><h2>Devralınan işler</h2>
+    <span class="muted" style="font-size:12px">Ana sorumlusu izinde olan ve yedeği olduğunuz işler</span>
+  </div>
+  <div class="panel-body" style="padding-top:4px">
+    <ul class="list">
+      {% for t in handover %}
+      <li class="sev-row {{ t.task_severity|lower }}">
+        <a class="title" href="{% url 'task_detail' t.pk %}">{{ t.task_title }}</a>
+        <span class="code">{{ t.code }}</span>
+        <span class="badge sev-{{ t.task_severity|lower }}">{{ t.get_task_severity_display }}</span>
+        <span class="badge st-{{ t.task_status|lower }}">{{ t.get_task_status_display }}</span>
+        {% if t.due_date %}<span class="due{% if t.is_overdue %} red{% endif %}" title="Son tarih">{{ t.due_date|date:"j M, H:i" }}</span>{% endif %}
+        {% if t.is_overdue %}<span class="badge overdue">Gecikmiş</span>{% endif %}
+        <span class="muted" style="font-size:12px">Ana sorumlu: {% for u in t.assignees.all %}{{ u.display_name }}{% if u.is_on_leave %} (izinli){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
 
 <section class="panel section">
   <div class="panel-head"><h2>İşlerim</h2>
@@ -23,11 +47,13 @@
     <section class="lane" data-status="{{ key }}" aria-label="{{ label }}">
       <header class="lane-head"><h3><span class="badge st-{{ key|lower }}">{{ label }}</span></h3><span class="lane-count" data-count>{{ tasks|length }}</span></header>
       <ul class="lane-list{% if not tasks %} is-empty{% endif %}">{% for t in tasks %}
-        <li class="card sev-row {{ t.task_severity|lower }}" draggable="true" data-id="{{ t.pk }}" data-severity="{{ t.task_severity }}" data-url="{% url 'task_status' t.pk %}">
+        <li class="card sev-row {{ t.task_severity|lower }}" draggable="true" data-id="{{ t.pk }}" data-severity="{{ t.task_severity }}" data-url="{% url 'task_status' t.pk %}"{% if t.due_date %} data-due="{{ t.due_date|date:'c' }}"{% endif %}>
           <a class="card-title" href="{% url 'task_detail' t.pk %}" draggable="false">{{ t.task_title }}</a>
           <div class="card-meta">
             <span class="badge sev-{{ t.task_severity|lower }}">{{ t.get_task_severity_display }}</span>
             <span class="code">{{ t.code }}</span>
+            {% if t.due_date %}<span class="due{% if t.is_overdue %} red{% endif %}" title="Son tarih">{{ t.due_date|date:"j M, H:i" }}</span>{% endif %}
+            {% if t.is_overdue %}<span class="badge overdue" data-overdue-badge>Gecikmiş</span>{% endif %}
             <span class="avatars">{% for u in t.assignees.all|slice:":3" %}<span class="avatar" title="{{ u.display_name }}">{{ u.initials }}</span>{% endfor %}</span>
           </div>
           <div class="card-move">
@@ -56,17 +82,18 @@
   {% if team is not None %}
   <div class="panel">
     <div class="panel-head"><h2>Ekibim</h2>
-      <div class="actions"><div class="legend"><span>Açık</span><span>Sürüyor</span><span>Biten</span></div></div>
+      <div class="actions"><div class="legend"><span>Açık</span><span>Sürüyor</span><span>Biten</span><span>Geciken</span></div></div>
     </div>
     <div class="panel-body" style="padding-top:6px">
       {% for m in team %}
       <a class="member" href="{% url 'member_profile' m.pk %}">
         <div class="avatar">{{ m.initials }}</div>
-        <div class="info"><div class="n">{{ m.display_name }}</div><div class="t">{{ m.title }}</div></div>
-        <div class="counters" aria-label="Açık {{ m.open_count }}, sürüyor {{ m.progress_count }}, biten {{ m.done_count }}">
+        <div class="info"><div class="n">{{ m.display_name }}{% if m.is_on_leave %} <span class="badge leave">İzinli</span>{% endif %}</div><div class="t">{{ m.title }}</div></div>
+        <div class="counters" aria-label="Açık {{ m.open_count }}, sürüyor {{ m.progress_count }}, biten {{ m.done_count }}, geciken {{ m.overdue_count }}">
           <span class="counter o">{{ m.open_count }}</span>
           <span class="counter p">{{ m.progress_count }}</span>
           <span class="counter d">{{ m.done_count }}</span>
+          <span class="counter late{% if not m.overdue_count %} zero{% endif %}">{{ m.overdue_count }}</span>
         </div>
       </a>
       {% empty %}<div class="empty">Ekibinizde henüz kimse yok. <a href="{% url 'team' %}">Üye ekleyin</a>.</div>{% endfor %}

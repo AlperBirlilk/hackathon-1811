@@ -3,7 +3,7 @@
 {% block title %}{{ task.task_title }}{% endblock %}
 {% block heading %}{{ task.task_title }}{% endblock %}
 {% block subheading %}
-<p class="sub"><span class="code">{{ task.code }}</span>&ensp;<span class="badge sev-{{ task.task_severity|lower }}">{{ task.get_task_severity_display }}</span>&ensp;<span class="badge st-{{ task.task_status|lower }}">{{ task.get_task_status_display }}</span></p>
+<p class="sub"><span class="code">{{ task.code }}</span>&ensp;<span class="badge sev-{{ task.task_severity|lower }}">{{ task.get_task_severity_display }}</span>&ensp;<span class="badge st-{{ task.task_status|lower }}">{{ task.get_task_status_display }}</span>{% if task.is_overdue %}&ensp;<span class="badge overdue">Gecikmiş</span>{% endif %}{% if is_handover %}&ensp;<span class="badge leave">Devralındı</span>{% endif %}</p>
 {% endblock %}
 {% block content %}
 <div class="grid grid-3-1">
@@ -14,10 +14,12 @@
         <p class="desc" style="margin:0 0 18px">{{ task.task_description|default:"Açıklama girilmemiş." }}</p>
         <dl class="kv">
           <dt>Atananlar</dt><dd><div class="chips">{% for u in task.assignees.all %}<span class="chip">{{ u.display_name }}</span>{% empty %}<span class="muted">Atanmamış</span>{% endfor %}</div></dd>
+          <dt>Yedek sorumlu</dt><dd>{% if task.backup_assignee %}<span class="chip">{{ task.backup_assignee.display_name }}</span>{% else %}<span class="muted">Yok</span>{% endif %}</dd>
+          <dt>Son tarih</dt><dd>{% if task.due_date %}<span{% if task.is_overdue %} class="red"{% endif %}>{{ task.due_date|date:"j F Y H:i" }}</span>{% if task.is_overdue %} <span class="badge overdue">Gecikmiş</span>{% endif %}{% else %}<span class="muted">Belirtilmemiş</span>{% endif %}</dd>
           <dt>Oluşturan</dt><dd>{{ task.created_by|default:"Bilinmiyor" }}, <span class="muted">{{ task.create_date|date:"j F Y H:i" }}</span></dd>
           <dt>Son güncelleme</dt><dd>{{ task.modified_by|default:"Bilinmiyor" }}, <span class="muted">{{ task.modified_date|date:"j F Y H:i" }}</span></dd>
         </dl>
-        {% if is_assignee and not editable %}
+        {% if can_status and not editable %}
         <form method="post" action="{% url 'task_status' task.pk %}" class="filters" style="margin-top:18px">{% csrf_token %}
           <select name="status" aria-label="Durum">{% for k, v in status_choices %}<option value="{{ k }}" {% if task.task_status == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
           <button class="btn sm">Durumu güncelle</button>
@@ -36,8 +38,10 @@
             {% include "_field.html" with field=form.description full=1 %}
             {% include "_severity_picker.html" with field=form.severity full=1 %}
             {% include "_field.html" with field=form.status %}
-            <div></div>
+            {% include "_field.html" with field=form.due_date %}
+            <p class="hint full field-hint">Boş bırakılırsa son tarih kaldırılır. SLA: Kritik 1, Yüksek 3, Orta 7, Düşük 14 gün.</p>
             {% include "_field.html" with field=form.assignees full=1 %}
+            {% include "_field.html" with field=form.backup_assignee %}
           </div>
           <div class="page-actions"><button class="btn">Değişiklikleri kaydet</button></div>
         </form>
