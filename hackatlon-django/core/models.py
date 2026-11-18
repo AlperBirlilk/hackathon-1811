@@ -1,5 +1,5 @@
 """
-Entity yapısı (img.png):
+Entity yapısı (docs/prototype-erd.png):
   User, User_Permission, Permission_Type, User_Skill, task, task_history, activity
 """
 from django.conf import settings
