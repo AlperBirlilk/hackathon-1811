@@ -1,0 +1,43 @@
+hackatlon-django/core/forms.py
+  s_28f6dc459dd1a5::t_8b90d896b8eca2 16-31,46-47,51-52,62-75,81-85
+hackatlon-django/core/notifications.py
+  s_28f6dc459dd1a5::t_f0447207a2fb5b 2-3,5-6,23-24,66-79,87,117-118,120-129,134-135,140-141,143-146,150,153,156,160,166-196,201,205-206,210
+hackatlon-django/core/services.py
+  s_28f6dc459dd1a5::t_6a70e53ac6d648 3,13-23,38-40,42,45-46,73-87,115-116
+hackatlon-django/core/test_tasks.py
+  s_28f6dc459dd1a5::t_368d8ae64b82de 1-262
+hackatlon-django/core/views.py
+  s_28f6dc459dd1a5::t_b551a3d79c1561 97-98,103-107,202,204-207,234,237,243-244,249,260-261,267,283-284,292-294,302,312-313,467-470,497
+hackatlon-django/static/css/portal.css
+  s_28f6dc459dd1a5::t_7bcc3dcc97556e 148,451-479
+hackatlon-django/static/js/portal.js
+  s_28f6dc459dd1a5::t_df4d028c2c9cd1 141-142,173-192,203
+hackatlon-django/templates/core/dashboard.html
+  s_28f6dc459dd1a5::t_fa5636a19b1c1b 13,16-38,50,55-56,85,91-92,96
+hackatlon-django/templates/core/profile.html
+  s_28f6dc459dd1a5::t_1e6e3a6090f3e3 12,74-75
+hackatlon-django/templates/core/task_detail.html
+  s_28f6dc459dd1a5::t_b4dbd50be8ca9a 6,17-18,22,41-42,44
+hackatlon-django/templates/core/task_form.html
+  s_28f6dc459dd1a5::t_9db52c52762f86 16-17,19
+hackatlon-django/templates/core/task_list.html
+  s_28f6dc459dd1a5::t_e4b74473cea754 16-18,20,49,58-59,63
+hackatlon-django/templates/core/team.html
+  s_28f6dc459dd1a5::t_13f740fac17dd3 4,8,15-16,20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dd9057c121940f6d371dc18f1c73a7cc526827b5",
+  "prompts": {},
+  "sessions": {
+    "s_28f6dc459dd1a5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_28f6dc459dd1a5",
+        "model": "unknown"
+      },
+      "human_author": "TURKCELL\\TCALBIRLIK <alper.birlik@turkcell.com.tr>"
+    }
+  }
+}
