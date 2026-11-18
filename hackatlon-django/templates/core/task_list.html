@@ -20,6 +20,10 @@
       {% if q or f_status or f_severity or f_overdue %}<a class="btn ghost" href="{% url 'task_list' %}">Filtreleri temizle</a>{% endif %}
     </form>
     <div class="actions">
+      {% if perm.report %}
+      <a class="btn sm ghost" href="{% url 'report_tasks_xlsx' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" title="Mevcut filtrelerle Excel olarak indir">Excel</a>
+      <a class="btn sm ghost" href="{% url 'report_tasks_pdf' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" title="Mevcut filtrelerle PDF olarak indir">PDF</a>
+      {% endif %}
       {% if tasks %}<button type="button" class="btn sm ghost" data-bulk-toggle aria-pressed="false">Toplu işlem</button>{% endif %}
       <a class="btn sm" href="{% url 'task_create' %}">Yeni task</a>
     </div>

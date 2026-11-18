@@ -386,7 +386,7 @@ def task_bulk(request):
 @login_required
 def activity_list(request):
     now = timezone.now()
-    base = Activity.objects.prefetch_related('attendees').select_related('created_by')
+    base = Activity.objects.prefetch_related('attendees').select_related('created_by', 'contact_person')
     return render(request, 'core/activity_list.html', {
         'upcoming': base.filter(activity_date__gte=now),
         'past': base.filter(activity_date__lt=now).order_by('-activity_date')[:10],
@@ -419,13 +419,6 @@ def activity_toggle_join(request, pk):
         activity.attendees.add(request.user)
         messages.success(request, f'"{activity.activity_name}" etkinliğine katıldınız.')
     return redirect('activity_list')
-
-
-# --------------------------------------------------------------------------- data sharing
-
-@portal_perm_required(PermissionType.DATA_ACCESS)
-def data_sharing(request):
-    return render(request, 'core/data_sharing.html')
 
 
 # --------------------------------------------------------------------------- team (yönetici)

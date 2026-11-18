@@ -126,26 +126,31 @@ class PageRenderTests(TestCase):
         member = User.objects.get(username='mert')
         task = Task.objects.filter(assignees=member).first()
         for url, code in [('/', 200), ('/tasks/', 200), ('/tasks/?q=a&status=OPEN', 200), ('/tasks/new/', 200),
-                          (f'/tasks/{task.pk}/', 200), ('/activities/', 200), ('/profile/', 200)] + expect(member):
+                          ('/tasks/?overdue=1', 200), (f'/tasks/{task.pk}/', 200), ('/activities/', 200),
+                          ('/profile/', 200), ('/notifications/', 200)] + expect(member):
             with self.subTest(user=username, url=url):
                 r = self.client.get(url)
                 self.assertEqual(r.status_code, code)
-                if code == 200:
+                if code == 200 and r['Content-Type'].startswith('text/html'):
                     self.assertContains(r, 'theme-toggle')
 
     def test_manager_pages(self):
         self._get_all('yonetici', lambda m: [('/team/', 200), (f'/team/{m.pk}/permissions/', 200),
                                              (f'/profile/{m.pk}/', 200), ('/activities/new/', 200),
-                                             ('/data-sharing/', 403)])   # yonetici'de DATA_ACCESS yok
+                                             ('/data-sharing/', 403),   # yonetici'de DATA_ACCESS yok
+                                             ('/reports/tasks.xlsx', 200), ('/reports/tasks.pdf?overdue=1', 200)])
+        self.assertContains(self.client.get('/tasks/'), '/reports/tasks.xlsx')   # rapor yetkisi olana buton görünür
 
     def test_director_pages(self):
         self._get_all('direktor', lambda m: [('/team/', 200), ('/data-sharing/', 200),
-                                             ('/activities/new/', 200)])
+                                             ('/activities/new/', 200), ('/reports/tasks.xlsx', 200)])
         self.assertTrue(User.objects.get(username='direktor').is_director)
         self.assertFalse(User.objects.get(username='yonetici').is_director)
 
     def test_member_pages(self):
-        self._get_all('mert', lambda m: [('/team/', 403), ('/activities/new/', 403), ('/data-sharing/', 200)])
+        self._get_all('mert', lambda m: [('/team/', 403), ('/activities/new/', 403), ('/data-sharing/', 200),
+                                         ('/reports/tasks.xlsx', 403), ('/reports/tasks.pdf', 403)])
+        self.assertNotContains(self.client.get('/tasks/'), '/reports/tasks.xlsx')   # buton yetkisize görünmez
 
     def test_login_page(self):
         r = self.client.get('/login/')

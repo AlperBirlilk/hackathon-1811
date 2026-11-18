@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from .models import Task
-from .views import SEVERITY_RANK, visible_tasks
+from .views import SEVERITY_RANK, overdue_q, visible_tasks
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def filter_tasks(user, params):
     if q:
         qs = qs.filter(Q(task_title__icontains=q) | Q(task_description__icontains=q))
     if (params.get('overdue') or '').strip().lower() in _TRUE_VALUES:
-        qs = qs.exclude(task_status=Task.STATUS_DONE).filter(due_date__lt=timezone.now())
+        qs = qs.filter(overdue_q())
     return (qs.annotate(sev_rank=SEVERITY_RANK).order_by('sev_rank', '-modified_date')
             .prefetch_related('assignees').select_related('backup_assignee'))
 
