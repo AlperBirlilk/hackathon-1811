@@ -1,5 +1,0 @@
-# Created at 2026-11-18T13:41:24.760
-Boot Manifest-JAR contains absolute paths in classpath 'D:\hackatlon\hackatlon-be\target\test-classes'
-Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
-'other' has different root
-

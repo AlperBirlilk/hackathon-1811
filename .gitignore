@@ -1,24 +1,32 @@
-# Compiled class file
-*.class
-
-# Log file
+# --- Python / Django (monorepo root; app-specific rules in hackatlon-django/.gitignore) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+myenv/
+db.sqlite3
+db.sqlite3-journal
+*.duckdb
+*.duckdb.wal
+staticfiles/
+media/
 *.log
 
-# BlueJ files
-*.ctxt
+# --- Node (future tooling) ---
+node_modules/
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
 
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
+# --- IDE / OS ---
+.idea/
+.vscode/
+.DS_Store
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+# --- Claude Code (shared .claude/ stays tracked; personal overrides do not) ---
+.claude/settings.local.json
+CLAUDE.local.md
