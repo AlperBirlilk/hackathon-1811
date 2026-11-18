@@ -4,6 +4,15 @@ Siber güvenlik ekipleri için task & aktivite yönetim portalı.
 
 ## Kurulum
 
+macOS / Linux (Python 3.10+ gerekir; sistem Python 3.9 çalışmaz):
+
+```bash
+uv venv -p 3.12 .venv && uv pip install -p .venv/bin/python -r requirements.txt
+.venv/bin/python manage.py migrate && .venv/bin/python manage.py seed && .venv/bin/python manage.py runserver
+```
+
+Windows:
+
 ```powershell
 myenv\Scripts\activate
 pip install -r requirements.txt
