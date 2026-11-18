@@ -13,6 +13,12 @@ urlpatterns = [
     path('tasks/<int:pk>/', views.task_detail, name='task_detail'),
     path('tasks/<int:pk>/status/', views.task_status, name='task_status'),
 
+    path('reports/tasks.<str:fmt>', views.task_report, name='task_report'),
+
+    path('notifications/', views.notification_list, name='notification_list'),
+    path('notifications/read-all/', views.notification_read_all, name='notification_read_all'),
+    path('notifications/<int:pk>/read/', views.notification_read, name='notification_read'),
+
     path('activities/', views.activity_list, name='activity_list'),
     path('activities/new/', views.activity_create, name='activity_create'),
     path('activities/<int:pk>/join/', views.activity_toggle_join, name='activity_toggle_join'),

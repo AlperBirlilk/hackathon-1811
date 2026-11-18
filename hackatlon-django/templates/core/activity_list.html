@@ -1,4 +1,5 @@
 {% extends "app.html" %}
+{% load portal_tags %}
 {% block title %}Etkinlikler{% endblock %}
 {% block heading %}Etkinlikler{% endblock %}
 {% block content %}
@@ -10,15 +11,15 @@
     <div class="panel-body">
       {% for a in upcoming %}
       <div class="event">
-        <div class="event-date"><div class="d">{{ a.activity_date|date:"j" }}</div><div class="m">{{ a.activity_date|date:"M" }}</div></div>
+        <div class="event-date"><div class="d">{{ a.date|date:"j" }}</div><div class="m">{{ a.date|date:"M" }}</div></div>
         <div class="info">
-          <div class="n">{{ a.activity_name }}</div>
-          <div class="meta">{{ a.activity_date|date:"l, H:i" }}{% if a.location %}, {{ a.location }}{% endif %}</div>
-          {% if a.activity_description %}<div style="font-size:13px;color:var(--ink-2);margin-top:2px">{{ a.activity_description }}</div>{% endif %}
+          <div class="n">{{ a.name }}</div>
+          <div class="meta">{{ a.date|date:"l, H:i" }}{% if a.location %}, {{ a.location }}{% endif %} · {{ a.type|label:'activity_type' }} · {{ a.participationType|label:'participation' }}{% if a.contactPerson %} · İrtibat: {{ a.contactPerson.displayName }}{% endif %}</div>
+          {% if a.description %}<div style="font-size:13px;color:var(--ink-2);margin-top:2px">{{ a.description }}</div>{% endif %}
         </div>
-        <div class="avatars" style="margin-right:6px">{% for u in a.attendees.all|slice:":5" %}<span class="avatar" title="{{ u.display_name }}">{{ u.initials }}</span>{% endfor %}</div>
-        <form method="post" action="{% url 'activity_toggle_join' a.pk %}" class="inline-form">{% csrf_token %}
-          {% if a.id in my_ids %}<button class="btn sm ghost" aria-label="{{ a.activity_name }} katılımını iptal et">Katılmaktan vazgeç</button>{% else %}<button class="btn sm">Katıl</button>{% endif %}
+        <div class="avatars" style="margin-right:6px">{% for u in a.attendees|slice:":5" %}<span class="avatar" title="{{ u.displayName }}">{{ u|initials }}</span>{% endfor %}</div>
+        <form method="post" action="{% url 'activity_toggle_join' a.id %}" class="inline-form">{% csrf_token %}
+          {% if a.joined %}<button class="btn sm ghost" aria-label="{{ a.name }} katılımını iptal et">Katılmaktan vazgeç</button>{% else %}<button class="btn sm">Katıl</button>{% endif %}
         </form>
       </div>
       {% empty %}<div class="empty">Planlanmış etkinlik yok.</div>{% endfor %}
@@ -28,7 +29,7 @@
     <div class="panel-head"><h2>Geçmiş etkinlikler</h2></div>
     <div class="panel-body">
       <ul class="list">
-        {% for a in past %}<li><span class="title">{{ a.activity_name }}</span><span class="muted" style="font-size:12px;white-space:nowrap">{{ a.activity_date|date:"j M" }}</span></li>
+        {% for a in past %}<li><span class="title">{{ a.name }}</span><span class="muted" style="font-size:12px;white-space:nowrap">{{ a.date|date:"j M" }}</span></li>
         {% empty %}<li class="empty">Geçmiş etkinlik yok.</li>{% endfor %}
       </ul>
     </div>

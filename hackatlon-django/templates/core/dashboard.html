@@ -1,5 +1,5 @@
 {% extends "app.html" %}
-{% load humanize %}
+{% load humanize portal_tags %}
 {% block title %}Genel bakış{% endblock %}
 {% block heading %}Merhaba, {{ user.first_name|default:user.username }}{% endblock %}
 {% block subheading %}
@@ -10,8 +10,9 @@
 <section class="panel summary section" aria-label="Özet">
   <div><div class="value">{{ stats.pending }}</div><div class="label">Bekleyen iş</div></div>
   <div><div class="value{% if stats.critical %} crit{% endif %}">{{ stats.critical }}</div><div class="label">Kritik öncelikli</div></div>
+  <div><div class="value{% if stats.overdue %} crit{% endif %}">{{ stats.overdue|default:0 }}</div><div class="label">Gecikmiş</div></div>
   <div><div class="value">{{ stats.done }}</div><div class="label">Tamamlanan</div></div>
-  <div><div class="value">{{ stats.activities }}</div><div class="label">Yaklaşan etkinlik</div></div>
+  <div><div class="value">{{ stats.upcomingActivities|default:0 }}</div><div class="label">Yaklaşan etkinlik</div></div>
 </section>
 
 <section class="grid grid-3-1 section">
@@ -24,11 +25,12 @@
         <h3>Bekleyen</h3>
         <ul class="list">
           {% for t in pending_tasks %}
-          <li class="sev-row {{ t.task_severity|lower }}" title="Önem: {{ t.get_task_severity_display }}">
-            <a class="title" href="{% url 'task_detail' t.pk %}">{{ t.task_title }}</a>
-            <form method="post" action="{% url 'task_status' t.pk %}" class="inline-form">{% csrf_token %}
+          <li class="sev-row {{ t.severity|lower }}" title="Önem: {{ t.severity|label:'severity' }}">
+            <a class="title" href="{% url 'task_detail' t.id %}">{{ t.title }}</a>
+            {% if t.isOverdue %}<span class="badge sev-critical">Gecikmiş</span>{% endif %}
+            <form method="post" action="{% url 'task_status' t.id %}" class="inline-form">{% csrf_token %}
               <input type="hidden" name="next" value="{% url 'dashboard' %}">
-              {% if t.task_status == 'OPEN' %}
+              {% if t.status == 'OPEN' %}
                 <input type="hidden" name="status" value="IN_PROGRESS"><button class="btn sm ghost">Başlat</button>
               {% else %}
                 <input type="hidden" name="status" value="DONE"><button class="btn sm ghost">Tamamla</button>
@@ -42,7 +44,7 @@
         <h3>Tamamlanan</h3>
         <ul class="list">
           {% for t in done_tasks %}
-          <li><span class="code">{{ t.code }}</span><a class="title" href="{% url 'task_detail' t.pk %}">{{ t.task_title }}</a></li>
+          <li><span class="code">{{ t.code }}</span><a class="title" href="{% url 'task_detail' t.id %}">{{ t.title }}</a></li>
           {% empty %}<li class="empty">Henüz tamamladığınız iş yok.</li>{% endfor %}
         </ul>
       </div>
@@ -54,30 +56,43 @@
     <div class="panel-body">
       {% for a in my_activities %}
       <div class="event">
-        <div class="event-date"><div class="d">{{ a.activity_date|date:"j" }}</div><div class="m">{{ a.activity_date|date:"M" }}</div></div>
-        <div class="info"><div class="n">{{ a.activity_name }}</div><div class="meta">{{ a.activity_date|date:"H:i" }}{% if a.location %}, {{ a.location }}{% endif %}</div></div>
+        <div class="event-date"><div class="d">{{ a.date|date:"j" }}</div><div class="m">{{ a.date|date:"M" }}</div></div>
+        <div class="info"><div class="n">{{ a.name }}</div><div class="meta">{{ a.date|date:"H:i" }}{% if a.location %}, {{ a.location }}{% endif %}</div></div>
       </div>
       {% empty %}<div class="empty">Katıldığınız yaklaşan etkinlik yok. <a href="{% url 'activity_list' %}">Etkinliklere göz atın</a>.</div>{% endfor %}
     </div>
   </div>
 </section>
 
-{% if team is not None or report %}
-<section class="grid {% if team is not None and report %}grid-2{% endif %} section">
-  {% if team is not None %}
+{% if handover_tasks %}
+<section class="panel section">
+  <div class="panel-head"><h2>Devralınan işler</h2><div class="actions"><span class="muted" style="font-size:12px">Ana sorumlu izinli, yedek sorumlu sizsiniz</span></div></div>
+  <div class="panel-body">
+    <ul class="list">
+      {% for t in handover_tasks %}
+      <li class="sev-row {{ t.severity|lower }}"><span class="code">{{ t.code }}</span><a class="title" href="{% url 'task_detail' t.id %}">{{ t.title }}</a>{% if t.isOverdue %}<span class="badge sev-critical">Gecikmiş</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+{% if team or report %}
+<section class="grid {% if team and report %}grid-2{% endif %} section">
+  {% if team %}
   <div class="panel">
     <div class="panel-head"><h2>Ekibim</h2>
       <div class="actions"><div class="legend"><span>Açık</span><span>Sürüyor</span><span>Biten</span></div></div>
     </div>
     <div class="panel-body" style="padding-top:6px">
       {% for m in team %}
-      <a class="member" href="{% url 'member_profile' m.pk %}">
-        <div class="avatar">{{ m.initials }}</div>
-        <div class="info"><div class="n">{{ m.display_name }}</div><div class="t">{{ m.title }}</div></div>
-        <div class="counters" aria-label="Açık {{ m.open_count }}, sürüyor {{ m.progress_count }}, biten {{ m.done_count }}">
-          <span class="counter o">{{ m.open_count }}</span>
-          <span class="counter p">{{ m.progress_count }}</span>
-          <span class="counter d">{{ m.done_count }}</span>
+      <a class="member" href="{% url 'member_profile' m.user.id %}">
+        <div class="avatar">{{ m.user|initials }}</div>
+        <div class="info"><div class="n">{{ m.user.displayName }}</div><div class="t">{{ m.title }}{% if m.isOnLeave %} (izinli){% endif %}{% if m.overdueCount %} · {{ m.overdueCount }} gecikmiş{% endif %}</div></div>
+        <div class="counters" aria-label="Açık {{ m.openCount }}, sürüyor {{ m.progressCount }}, biten {{ m.doneCount }}">
+          <span class="counter o">{{ m.openCount }}</span>
+          <span class="counter p">{{ m.progressCount }}</span>
+          <span class="counter d">{{ m.doneCount }}</span>
         </div>
       </a>
       {% empty %}<div class="empty">Ekibinizde henüz kimse yok. <a href="{% url 'team' %}">Üye ekleyin</a>.</div>{% endfor %}
@@ -91,14 +106,14 @@
     <div class="panel-body grid grid-2" style="gap:28px">
       <div class="sub-panel">
         <h3>Önem derecesi</h3>
-        {% for key, label, count, pct in report.severity %}
-        <div class="bar-row"><span>{{ label }}</span><div class="bar {{ key|lower }}"><i style="width:{{ pct }}%"></i></div><span>{{ count }}</span></div>
+        {% for r in report.bySeverity %}
+        <div class="bar-row"><span>{{ r.key|label:'severity' }}</span><div class="bar {{ r.key|lower }}"><i style="width:{{ r.percent }}%"></i></div><span>{{ r.count }}</span></div>
         {% endfor %}
       </div>
       <div class="sub-panel">
         <h3>Durum</h3>
-        {% for key, label, count, pct in report.status %}
-        <div class="bar-row"><span>{{ label }}</span><div class="bar {{ key|lower }}"><i style="width:{{ pct }}%"></i></div><span>{{ count }}</span></div>
+        {% for r in report.byStatus %}
+        <div class="bar-row"><span>{{ r.key|label:'status' }}</span><div class="bar {{ r.key|lower }}"><i style="width:{{ r.percent }}%"></i></div><span>{{ r.count }}</span></div>
         {% endfor %}
       </div>
     </div>
@@ -112,12 +127,12 @@
   <ul class="feed">
     {% for h in recent_history %}
     <li>
-      <div class="avatar">{{ h.action_by.initials|default:"?" }}</div>
+      <div class="avatar">{{ h.actionBy|initials }}</div>
       <div class="body">
-        <div class="what"><strong>{{ h.action_by.display_name|default:"Sistem" }}</strong>, <a href="{% url 'task_detail' h.task_id %}">{{ h.task.task_title }}</a></div>
-        <div class="muted" style="font-size:13px">{{ h.action_description }}</div>
+        <div class="what"><strong>{{ h.actionBy.displayName|default:"Sistem" }}</strong>, <a href="{% url 'task_detail' h.task.id %}">{{ h.task.title }}</a></div>
+        <div class="muted" style="font-size:13px">{{ h.actionDescription }}</div>
       </div>
-      <time class="when" datetime="{{ h.action_date|date:'c' }}" title="{{ h.action_date|date:'d.m.Y H:i' }}">{{ h.action_date|naturaltime }}</time>
+      <time class="when" datetime="{{ h.actionDate|date:'c' }}" title="{{ h.actionDate|date:'d.m.Y H:i' }}">{{ h.actionDate|naturaltime }}</time>
     </li>
     {% empty %}<li class="empty" style="justify-content:center">Henüz bir hareket yok.</li>{% endfor %}
   </ul>

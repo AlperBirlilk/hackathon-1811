@@ -15,6 +15,8 @@
         <svg class="i" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2"/></svg>İşler</a>
       <a href="{% url 'activity_list' %}" class="{% if url|slice:':8' == 'activity' %}active{% endif %}">
         <svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Etkinlikler</a>
+      <a href="{% url 'notification_list' %}" class="{% if url|slice:':12' == 'notification' %}active{% endif %}">
+        <svg class="i" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>Bildirimler{% if unread_count %}<span class="tag badge sev-critical" aria-label="{{ unread_count }} okunmamış bildirim">{{ unread_count }}</span>{% endif %}</a>
       {% if perm.data %}
       <a href="{% url 'data_sharing' %}" class="{% if url == 'data_sharing' %}active{% endif %}">
         <svg class="i" viewBox="0 0 24 24"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>Veri paylaşımı</a>
@@ -40,7 +42,7 @@
         <div class="avatar">{{ user.initials }}</div>
         <div style="flex:1;min-width:0">
           <span class="name">{{ user.display_name }}</span>
-          <span class="role">{{ user.title|default:user.username }}</span>
+          <span class="role">{{ me.title|default:user.username }}</span>
         </div>
         <form method="post" action="{% url 'logout' %}" class="inline-form">{% csrf_token %}
           <button class="icon-btn" aria-label="Çıkış yap" title="Çıkış yap">

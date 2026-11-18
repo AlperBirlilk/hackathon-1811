@@ -33,6 +33,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'core.middleware.ApiSessionMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -131,3 +132,9 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Java backend (domain API) ve JWT
+PORTAL_API_URL = os.environ.get('PORTAL_API_URL', 'http://127.0.0.1:8080').rstrip('/')
+PORTAL_JWT_SECRET = os.environ.get('PORTAL_JWT_SECRET', 'dev-only-change-me-dev-only-change-me-32b')
+PORTAL_SERVICE_KEY = os.environ.get('PORTAL_SERVICE_KEY', 'dev-service-key')
+PORTAL_JWT_HOURS = int(os.environ.get('PORTAL_JWT_HOURS', '8'))

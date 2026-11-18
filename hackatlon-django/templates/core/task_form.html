@@ -12,8 +12,10 @@
         {% include "_field.html" with field=form.severity %}
         {% include "_field.html" with field=form.status %}
         {% include "_field.html" with field=form.assignees full=1 %}
+        {% include "_field.html" with field=form.backup_assignee %}
+        {% include "_field.html" with field=form.due_date %}
       </div>
-      <p class="hint">Birden fazla kişi seçmek için Ctrl tuşuna basılı tutun.</p>
+      <p class="hint">Birden fazla kişi seçmek için Ctrl tuşuna basılı tutun. Son tarih boş bırakılırsa önem derecesine göre SLA uygulanır.</p>
       <div class="page-actions"><a class="btn ghost" href="{% url 'task_list' %}">Vazgeç</a><button class="btn">Task oluştur</button></div>
     </form>
   </div>

@@ -1,16 +1,17 @@
 {% extends "app.html" %}
+{% load portal_tags %}
 {% block title %}Yetkiler{% endblock %}
-{% block heading %}{{ member.display_name }} için yetkiler{% endblock %}
+{% block heading %}{{ member.displayName }} için yetkiler{% endblock %}
 {% block subheading %}<p class="sub">{{ member.title|default:member.username }}</p>{% endblock %}
 {% block content %}
 <div class="panel" style="max-width:720px">
   <div class="panel-body" style="padding:20px">
     <form method="post">{% csrf_token %}
-      {% for p, has, grantable in rows %}
-      <label class="check-row{% if not grantable %} disabled{% endif %}">
-        <input type="checkbox" name="permissions" value="{{ p.id }}" {% if has %}checked{% endif %} {% if not grantable %}disabled{% endif %}>
-        <div style="flex:1"><div class="t">{{ p.permission_name }}</div><div class="d">{{ p.description }}</div></div>
-        {% if not grantable %}<span class="muted" style="font-size:12px">Sizde bu yetki yok</span>{% endif %}
+      {% for p in rows %}
+      <label class="check-row{% if not p.grantable %} disabled{% endif %}">
+        <input type="checkbox" name="permissions" value="{{ p.code }}" {% if p.granted %}checked{% endif %} {% if not p.grantable %}disabled{% endif %}>
+        <div style="flex:1"><div class="t">{{ p.code|label:'perm' }}</div><div class="d">{{ p.name }}</div></div>
+        {% if not p.grantable %}{% if p.granted %}<input type="hidden" name="permissions" value="{{ p.code }}">{% endif %}<span class="muted" style="font-size:12px">Sizde bu yetki yok</span>{% endif %}
       </label>
       {% endfor %}
       <p class="hint">Yalnızca kendi sahip olduğunuz yetkileri verip geri alabilirsiniz.</p>

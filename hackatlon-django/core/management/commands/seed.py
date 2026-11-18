@@ -19,6 +19,7 @@ PERMISSIONS = [
 
 USERS = [
     # username, first, last, title, perms, skills, certs
+    ('direktor', 'Deniz', 'Aksoy', 'Siber Güvenlik Direktörü', [p[0] for p in PERMISSIONS], [], []),
     ('yonetici', 'Selin', 'Kaya', 'SOC Manager', [p[0] for p in PERMISSIONS],
      ['Incident Response', 'Risk Yönetimi'], ['CISSP', 'CISM']),
     ('mert', 'Mert', 'Demir', 'SOC Analyst L2', [PermissionType.DATA_ACCESS],

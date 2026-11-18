@@ -1,11 +1,33 @@
 {% extends "app.html" %}
 {% block title %}Veri paylaşımı{% endblock %}
 {% block heading %}Veri paylaşımı{% endblock %}
+{% block subheading %}<p class="sub">Portal verisini Claude (MCP) veya başka uygulamalarda salt okunur sorgulamak için erişim anahtarı.</p>{% endblock %}
 {% block content %}
-<div class="panel" style="max-width:720px">
-  <div class="panel-body" style="padding:28px">
-    <h2 style="font-size:16px;margin-bottom:6px">Bu alan hazırlanıyor</h2>
-    <p class="muted" style="margin:0;max-width:60ch">IOC listeleri, tehdit istihbaratı ve olay raporları ekipler arasında buradan paylaşılacak. Sayfayı yalnızca veri erişim yetkisi olan kullanıcılar görür.</p>
+<div class="stack" style="max-width:820px">
+  <div class="panel">
+    <div class="panel-head"><h2>Erişim anahtarı (7 gün)</h2></div>
+    <div class="panel-body">
+      {% if token %}
+      <p class="muted" style="margin:0 0 10px;font-size:13px">Bu anahtar yalnızca şimdi gösterilir; kimseyle paylaşmayın. Sizin yetkilerinizle çalışır ve 7 gün sonra geçersiz olur.</p>
+      <textarea class="code" readonly rows="4" style="width:100%" aria-label="Erişim anahtarı">{{ token }}</textarea>
+      {% else %}
+      <p class="muted" style="margin:0 0 14px;font-size:13px">Anahtar, sayfayı her açtığınızda değil yalnızca istediğinizde üretilir.</p>
+      <form method="post">{% csrf_token %}<button class="btn">Anahtar üret</button></form>
+      {% endif %}
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Kullanılabilir uç noktalar</h2></div>
+    <div class="panel-body">
+      <ul class="list">{% for ep in endpoints %}<li><span class="code">GET {{ api_url }}{{ ep }}</span></li>{% endfor %}</ul>
+      <p class="hint">İsteklerde <span class="code">Authorization: Bearer &lt;anahtar&gt;</span> başlığı kullanılır.</p>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>MCP ile kullanım</h2></div>
+    <div class="panel-body">
+      <p class="desc" style="margin:0">MCP sunucusunu (repo kökündeki mcp/) şu ortam değişkenleriyle başlatın: <span class="code">PORTAL_API_URL={{ api_url }}</span> ve <span class="code">PORTAL_API_TOKEN=&lt;anahtar&gt;</span>. Ardından Claude'a "gecikmiş işleri listele" gibi sorular sorabilirsiniz. Tüm araçlar salt okunurdur.</p>
+    </div>
   </div>
 </div>
 {% endblock %}

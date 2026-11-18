@@ -1,20 +1,19 @@
 {% extends "app.html" %}
+{% load portal_tags %}
 {% block title %}Profil{% endblock %}
-{% block heading %}{% if own %}Profilim{% else %}{{ target.display_name }}{% endif %}{% endblock %}
+{% block heading %}{% if own %}Profilim{% else %}{{ target.displayName }}{% endif %}{% endblock %}
 {% block content %}
 <div class="grid grid-1-2">
   <div class="stack">
     <div class="panel">
       <div class="panel-body" style="text-align:center;padding:24px 20px 20px">
-        <div class="avatar lg" style="margin:0 auto 12px">{{ target.initials }}</div>
-        <h2 style="font-size:18px">{{ target.display_name }}</h2>
+        <div class="avatar lg" style="margin:0 auto 12px">{{ target|initials }}</div>
+        <h2 style="font-size:18px">{{ target.displayName }}</h2>
         <p class="muted" style="margin:2px 0 18px">{{ target.title|default:"Ünvan girilmemiş" }}</p>
         <dl class="kv" style="text-align:left">
           <dt>Kullanıcı adı</dt><dd>{{ target.username }}</dd>
-          <dt>Giriş türü</dt><dd>{% if target.auth_source == 'LDAP' %}Kurumsal hesap (LDAP){% else %}Yerel hesap{% endif %}</dd>
-          <dt>Birim</dt><dd>{{ target.department|default:"–" }}</dd>
-          <dt>Yönetici</dt><dd>{{ target.manager|default:"–" }}</dd>
-          <dt>Son giriş</dt><dd>{{ target.last_login|date:"j F Y H:i"|default:"–" }}</dd>
+                    <dt>Birim</dt><dd>{{ target.department|default:"–" }}</dd>
+          <dt>Yönetici</dt><dd>{{ target.manager.displayName|default:"–" }}{% if target.isOnLeave %}</dd><dt>Durum</dt><dd><span class="badge perm-badge">İzinli</span>{% endif %}</dd>
         </dl>
         {% if target.bio %}<p class="desc" style="text-align:left;margin:16px 0 0">{{ target.bio }}</p>{% endif %}
       </div>
@@ -31,7 +30,7 @@
     </div>
     <div class="panel">
       <div class="panel-head"><h2>Portal yetkileri</h2></div>
-      <div class="panel-body"><div class="chips">{% for p in perms %}<span class="badge perm-badge">{{ p.permission_name }}</span>{% empty %}<span class="muted" style="font-size:13px">Tanımlı yetki yok. Yetki için ekip yöneticinize başvurun.</span>{% endfor %}</div></div>
+      <div class="panel-body"><div class="chips">{% for p in perms %}<span class="badge perm-badge">{{ p|label:'perm' }}</span>{% empty %}<span class="muted" style="font-size:13px">Tanımlı yetki yok. Yetki için ekip yöneticinize başvurun.</span>{% endfor %}</div></div>
     </div>
   </div>
 
@@ -40,10 +39,10 @@
       <div class="panel-head"><h2>Yetenekler ve sertifikalar</h2></div>
       <div class="panel-body">
         <div class="sub-panel" style="margin-bottom:16px"><h3>Yetenekler</h3>
-          <div class="chips">{% for s in skills %}<span class="chip">{{ s.skill_name }}{% if own %}<form method="post" action="{% url 'skill_delete' s.pk %}" class="inline-form">{% csrf_token %}<button aria-label="{{ s.skill_name }} sil" title="Sil">&times;</button></form>{% endif %}</span>{% empty %}<span class="muted" style="font-size:13px">Henüz eklenmemiş.</span>{% endfor %}</div>
+          <div class="chips">{% for s in skills %}<span class="chip">{{ s.skillName }}{% if own %}<form method="post" action="{% url 'skill_delete' s.id %}" class="inline-form">{% csrf_token %}<button aria-label="{{ s.skillName }} sil" title="Sil">&times;</button></form>{% endif %}</span>{% empty %}<span class="muted" style="font-size:13px">Henüz eklenmemiş.</span>{% endfor %}</div>
         </div>
         <div class="sub-panel"><h3>Sertifikalar</h3>
-          <div class="chips">{% for s in certs %}<span class="chip cert">{{ s.skill_name }}{% if own %}<form method="post" action="{% url 'skill_delete' s.pk %}" class="inline-form">{% csrf_token %}<button aria-label="{{ s.skill_name }} sil" title="Sil">&times;</button></form>{% endif %}</span>{% empty %}<span class="muted" style="font-size:13px">Henüz eklenmemiş.</span>{% endfor %}</div>
+          <div class="chips">{% for s in certs %}<span class="chip cert">{{ s.skillName }}{% if own %}<form method="post" action="{% url 'skill_delete' s.id %}" class="inline-form">{% csrf_token %}<button aria-label="{{ s.skillName }} sil" title="Sil">&times;</button></form>{% endif %}</span>{% empty %}<span class="muted" style="font-size:13px">Henüz eklenmemiş.</span>{% endfor %}</div>
         </div>
         {% if own %}
         <form method="post" class="filters" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line-2)">{% csrf_token %}
@@ -70,6 +69,7 @@
             {% include "_field.html" with field=profile_form.phone %}
             {% include "_field.html" with field=profile_form.location full=1 %}
             {% include "_field.html" with field=profile_form.bio full=1 %}
+            {% include "_field.html" with field=profile_form.is_on_leave %}
           </div>
           <div class="page-actions"><button class="btn">Bilgilerimi kaydet</button></div>
         </form>

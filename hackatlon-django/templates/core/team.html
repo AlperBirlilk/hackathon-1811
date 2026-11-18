@@ -1,4 +1,5 @@
 {% extends "app.html" %}
+{% load portal_tags %}
 {% block title %}Ekibim{% endblock %}
 {% block heading %}Ekibim{% endblock %}
 {% block subheading %}<p class="sub">Ekip üyelerinizi ve portal yetkilerini buradan yönetin.</p>{% endblock %}
@@ -12,12 +13,12 @@
         <tbody>
         {% for m in team %}
           <tr>
-            <td><div class="user-chip"><div class="avatar">{{ m.initials }}</div><div><a class="name" href="{% url 'member_profile' m.pk %}">{{ m.display_name }}</a><span class="role">{{ m.title|default:m.username }}</span></div></div></td>
-            <td><div class="counters"><span class="counter o">{{ m.open_count }}</span><span class="counter p">{{ m.progress_count }}</span><span class="counter d">{{ m.done_count }}</span></div></td>
-            <td><div class="chips">{% for p in m.permissions.all %}<span class="badge perm-badge">{{ p.permission_name }}</span>{% empty %}<span class="muted">Yetki yok</span>{% endfor %}</div></td>
+            <td><div class="user-chip"><div class="avatar">{{ m.user|initials }}</div><div><a class="name" href="{% url 'member_profile' m.user.id %}">{{ m.user.displayName }}</a><span class="role">{{ m.title|default:m.user.username }}{% if m.isOnLeave %} (izinli){% endif %}</span></div></div></td>
+            <td><div class="counters"><span class="counter o">{{ m.openCount }}</span><span class="counter p">{{ m.progressCount }}</span><span class="counter d">{{ m.doneCount }}</span></div>{% if m.overdueCount %}<span class="badge sev-critical">{{ m.overdueCount }} gecikmiş</span>{% endif %}</td>
+            <td><div class="chips">{% for p in m.permissions %}<span class="badge perm-badge">{{ p|label:'perm' }}</span>{% empty %}<span class="muted">Yetki yok</span>{% endfor %}</div></td>
             <td style="text-align:right;white-space:nowrap">
-              <a class="btn sm ghost" href="{% url 'member_permissions' m.pk %}">Yetkileri düzenle</a>
-              <form method="post" action="{% url 'team_remove' m.pk %}" class="inline-form" data-confirm="{{ m.display_name }} ekipten çıkarılsın mı?">{% csrf_token %}<button class="btn sm red">Ekipten çıkar</button></form>
+              <a class="btn sm ghost" href="{% url 'member_permissions' m.user.id %}">Yetkileri düzenle</a>
+              <form method="post" action="{% url 'team_remove' m.user.id %}" class="inline-form" data-confirm="{{ m.user.displayName }} ekipten çıkarılsın mı?">{% csrf_token %}<button class="btn sm red">Ekipten çıkar</button></form>
             </td>
           </tr>
         {% empty %}
@@ -35,7 +36,7 @@
       <form method="post" action="{% url 'team_add' %}">{% csrf_token %}
         <div class="field" style="margin-bottom:12px">
           <label for="add-user">Henüz bir ekibe bağlı olmayanlar</label>
-          <select name="user_id" id="add-user" required>{% for c in candidates %}<option value="{{ c.pk }}">{{ c.display_name }}{% if c.title %}, {{ c.title }}{% endif %}</option>{% endfor %}</select>
+          <select name="user_id" id="add-user" required>{% for c in candidates %}<option value="{{ c.id }}">{{ c.displayName }}</option>{% endfor %}</select>
         </div>
         <button class="btn block">Ekibe ekle</button>
       </form>
