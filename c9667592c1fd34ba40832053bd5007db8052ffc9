@@ -1,0 +1,109 @@
+.claude/rules/java-backend.md
+  s_2fc5ad32f3148b::t_ae8fe8f2860a28 1-17
+hackatlon-be/src/main/resources/schema.sql
+  s_2fc5ad32f3148b::t_5acdf36df4fbf0 1-107
+.claude/settings.json
+  s_2fc5ad32f3148b::t_bf9f5073c3626e 21-24,32-33
+hackatlon-be/src/main/java/com/cyberops/portal/auth/SecurityConfig.java
+  s_2fc5ad32f3148b::t_33c7b7c1508cd5 1-43
+hackatlon-be/src/main/java/com/cyberops/portal/common/ForbiddenException.java
+  s_2fc5ad32f3148b::t_3b44ab91014d21 1-11
+hackatlon-be/src/main/java/com/cyberops/portal/auth/JwtService.java
+  s_2fc5ad32f3148b::t_33c7b7c1508cd5 1-52
+.claude/agents/frontend-dev.md
+  s_2fc5ad32f3148b::t_7cb552a9705d41 1-26
+.claude/skills/new-backend-endpoint/SKILL.md
+  s_2fc5ad32f3148b::t_6b3184d23ad037 1-25
+.claude/rules/django.md
+  s_2fc5ad32f3148b::t_ae8fe8f2860a28 6,8-11,13-15
+hackatlon-be/src/main/java/com/cyberops/portal/report/package-info.java
+  s_2fc5ad32f3148b::t_3b44ab91014d21 1-2
+docs/api-contract.md
+  s_2fc5ad32f3148b::t_5256a0c2353d29 44
+hackatlon-be/src/main/java/com/cyberops/portal/auth/ServiceKeyFilter.java
+  s_2fc5ad32f3148b::t_33c7b7c1508cd5 1-42
+hackatlon-be/pom.xml
+  s_2fc5ad32f3148b::t_286cebe2ce6506 9,11-12,14-15,19-22,25-32,39-63
+mcp/CLAUDE.md
+  s_2fc5ad32f3148b::t_18dd4631e74a80 1,3,6-10,14-17
+hackatlon-be/src/main/java/com/cyberops/portal/auth/UserAccountRepository.java
+  s_2fc5ad32f3148b::t_5256a0c2353d29 62,69-70
+  s_2fc5ad32f3148b::t_33c7b7c1508cd5 1-61,63-68,71-86
+hackatlon-be/src/main/java/com/cyberops/portal/common/PermissionCodes.java
+  s_2fc5ad32f3148b::t_3b44ab91014d21 1-13
+.claude/skills/demo-check/SKILL.md
+  s_2fc5ad32f3148b::t_bf9f5073c3626e 3,8,10-21,25
+hackatlon-be/README.md
+  s_2fc5ad32f3148b::t_1fe1bae4fc324c 1-45
+hackatlon-be/src/main/java/com/cyberops/portal/user/package-info.java
+  s_2fc5ad32f3148b::t_3b44ab91014d21 1-2
+hackatlon-be/src/main/java/com/cyberops/portal/task/package-info.java
+  s_2fc5ad32f3148b::t_3b44ab91014d21 1-2
+hackatlon-be/src/test/java/com/cyberops/portal/PortalApplicationTests.java
+  s_2fc5ad32f3148b::t_18fff8e1ce0eed 1,7
+hackatlon-be/src/main/java/com/cyberops/portal/common/NotFoundException.java
+  s_2fc5ad32f3148b::t_3b44ab91014d21 1-7
+hackatlon-django/CLAUDE.md
+  s_2fc5ad32f3148b::t_ae8fe8f2860a28 1,3-10,15-18,20-49,53-54
+hackatlon-be/src/main/java/com/cyberops/portal/common/GlobalExceptionHandler.java
+  s_2fc5ad32f3148b::t_3b44ab91014d21 1-61
+.claude/skills/task-change/SKILL.md
+  s_2fc5ad32f3148b::t_bf9f5073c3626e 3,8,10-26
+hackatlon-be/src/main/java/com/cyberops/portal/auth/CurrentUser.java
+  s_2fc5ad32f3148b::t_33c7b7c1508cd5 1-11
+.claude/agents/code-reviewer.md
+  s_2fc5ad32f3148b::t_7cb552a9705d41 3,10-25
+.claude/skills/fullstack-feature/SKILL.md
+  s_2fc5ad32f3148b::t_6b3184d23ad037 1-24
+hackatlon-be/src/main/java/com/cyberops/portal/auth/UserProfile.java
+  s_2fc5ad32f3148b::t_33c7b7c1508cd5 1-5,8
+  s_2fc5ad32f3148b::t_5256a0c2353d29 6-7
+hackatlon-be/src/main/java/com/cyberops/portal/auth/CurrentUserService.java
+  s_2fc5ad32f3148b::t_33c7b7c1508cd5 1-50
+.claude/agents/security-reviewer.md
+  s_2fc5ad32f3148b::t_7cb552a9705d41 3,9,11-20,22-30
+hackatlon-be/src/main/java/com/cyberops/portal/auth/AuthController.java
+  s_2fc5ad32f3148b::t_33c7b7c1508cd5 1-52
+hackatlon-be/src/main/resources/data.sql
+  s_2fc5ad32f3148b::t_5acdf36df4fbf0 1-106
+hackatlon-be/CLAUDE.md
+  s_2fc5ad32f3148b::t_5256a0c2353d29 14,45
+  s_2fc5ad32f3148b::t_18dd4631e74a80 1-13,15-44,46-54
+CLAUDE.md
+  s_2fc5ad32f3148b::t_5256a0c2353d29 48
+  s_2fc5ad32f3148b::t_18dd4631e74a80 3-13,18-22,25-26,28-30,32-47,49-51,54-68,73-77,81-84,86-90,92
+hackatlon-be/src/main/java/com/cyberops/portal/PortalApplication.java
+  s_2fc5ad32f3148b::t_3b44ab91014d21 1-3,9,12-14
+.claude/skills/add-mcp-tool/SKILL.md
+  s_2fc5ad32f3148b::t_6b3184d23ad037 1-42
+hackatlon-be/src/main/java/com/cyberops/portal/activity/package-info.java
+  s_2fc5ad32f3148b::t_3b44ab91014d21 1-2
+.claude/skills/new-page/SKILL.md
+  s_2fc5ad32f3148b::t_bf9f5073c3626e 3,10-18,24-27
+.claude/agents/backend-dev.md
+  s_2fc5ad32f3148b::t_7cb552a9705d41 1-25
+.claude/agents/qa-demo.md
+  s_2fc5ad32f3148b::t_6b3184d23ad037 3,9-12,14-15,27-34,36-46,48
+hackatlon-be/src/main/java/com/cyberops/portal/task/TaskVisibility.java
+  s_2fc5ad32f3148b::t_3b44ab91014d21 1-40
+.claude/rules/security.md
+  s_2fc5ad32f3148b::t_ae8fe8f2860a28 5-9,12-23
+hackatlon-be/src/main/resources/application.properties
+  s_2fc5ad32f3148b::t_18fff8e1ce0eed 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c9667592c1fd34ba40832053bd5007db8052ffc9",
+  "prompts": {},
+  "sessions": {
+    "s_2fc5ad32f3148b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7bce364-b086-457f-8146-3d4c9b47bd66",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "MERT KURA <mert.kura@atmosware.turkcell.com.tr>"
+    }
+  }
+}

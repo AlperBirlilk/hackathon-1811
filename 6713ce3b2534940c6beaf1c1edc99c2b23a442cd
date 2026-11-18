@@ -1,0 +1,19 @@
+docs/api-contract.md
+  s_2fc5ad32f3148b::t_297915add8ad69 1-174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6713ce3b2534940c6beaf1c1edc99c2b23a442cd",
+  "prompts": {},
+  "sessions": {
+    "s_2fc5ad32f3148b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7bce364-b086-457f-8146-3d4c9b47bd66",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "MERT KURA <mert.kura@atmosware.turkcell.com.tr>"
+    }
+  }
+}
