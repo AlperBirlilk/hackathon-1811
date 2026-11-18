@@ -1,0 +1,35 @@
+docs/api-contract.md
+  s_e99aa88612197c::t_c0f15f2c3fc61d 27
+hackatlon-django/core/api/views.py
+  s_e99aa88612197c::t_b07d160325da40 143-147
+hackatlon-django/core/reports.py
+  s_e99aa88612197c::t_60cbda5f475243 10,33-34
+hackatlon-django/core/test_security.py
+  s_e99aa88612197c::t_a7eceea98c4d41 125-160
+hackatlon-django/core/tests.py
+  s_e99aa88612197c::t_a5517178a64dbf 265-266
+hackatlon-django/core/views.py
+  s_e99aa88612197c::t_d2f2401500e4b9 248-250,252-253,276,278-279,290,402,415-416,425-427
+hackatlon-django/static/js/portal.js
+  s_e99aa88612197c::t_da8740aa485d87 207-208
+hackatlon-django/templates/core/dashboard.html
+  s_e99aa88612197c::t_97e4a1362db2df 13
+hackatlon-django/templates/core/task_list.html
+  s_e99aa88612197c::t_57b21a9d5321f8 19-21,23,70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "79b448c91747de3acbac2feb9e48aeda677eef47",
+  "prompts": {},
+  "sessions": {
+    "s_e99aa88612197c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_e99aa88612197c",
+        "model": "unknown"
+      },
+      "human_author": "TURKCELL\\TCALBIRLIK <alper.birlik@turkcell.com.tr>"
+    }
+  }
+}
