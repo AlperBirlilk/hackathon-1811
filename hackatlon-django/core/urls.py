@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from .api import portal_views as api_portal_views
 from . import notification_views, report_views
 
 urlpatterns = [
@@ -26,7 +27,9 @@ urlpatterns = [
     path('reports/tasks.xlsx', report_views.report_tasks_xlsx, name='report_tasks_xlsx'),
     path('reports/tasks.pdf', report_views.report_tasks_pdf, name='report_tasks_pdf'),
 
-    path('data-sharing/', views.data_sharing, name='data_sharing'),
+    path('data-sharing/', api_portal_views.data_sharing, name='data_sharing'),
+    path('data-sharing/token/', api_portal_views.api_token_generate, name='api_token_generate'),
+    path('data-sharing/token/revoke/', api_portal_views.api_token_revoke, name='api_token_revoke'),
 
     path('team/', views.team, name='team'),
     path('team/add/', views.team_add, name='team_add'),
