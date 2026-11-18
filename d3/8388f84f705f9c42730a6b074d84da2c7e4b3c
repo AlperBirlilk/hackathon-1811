@@ -1,0 +1,54 @@
+hackatlon-django/README.md
+  h_31d152b14e4250 79-99
+hackatlon-django/config/settings.py
+  h_31d152b14e4250 63-68,89-113
+hackatlon-django/core/forms.py
+  h_31d152b14e4250 9-10
+hackatlon-django/core/management/commands/send_test_mail.py
+  h_31d152b14e4250 1-36
+hackatlon-django/core/notifications.py
+  h_31d152b14e4250 1-168
+hackatlon-django/core/services.py
+  h_31d152b14e4250 4,27,55,79-80
+hackatlon-django/core/tests.py
+  h_31d152b14e4250 7-8,147-377
+hackatlon-django/core/urls.py
+  h_31d152b14e4250 15
+hackatlon-django/core/views.py
+  h_31d152b14e4250 12,14,19,56-80,144-153,155,168-169,173,203,209,219-220,222-228,265-267,270-324,348
+hackatlon-django/static/css/portal.css
+  h_31d152b14e4250 341-450
+hackatlon-django/static/js/portal.js
+  h_31d152b14e4250 5-8,11-45,55-60,65-71,73,80-321
+hackatlon-django/templates/_distribution_panel.html
+  h_31d152b14e4250 1-20
+hackatlon-django/templates/_field.html
+  h_31d152b14e4250 1,4
+hackatlon-django/templates/_severity_picker.html
+  h_31d152b14e4250 1-11
+hackatlon-django/templates/core/activity_list.html
+  h_31d152b14e4250 12,15,31
+hackatlon-django/templates/core/dashboard.html
+  h_31d152b14e4250 5,9-11,15-39,41,43,48,51,76,78-81
+hackatlon-django/templates/core/task_detail.html
+  h_31d152b14e4250 37,39
+hackatlon-django/templates/core/task_form.html
+  h_31d152b14e4250 4,6-38
+hackatlon-django/templates/core/task_list.html
+  h_31d152b14e4250 6,19-22,24-41,43-47,51,59
+hackatlon-django/templates/emails/notification.html
+  h_31d152b14e4250 1-77
+hackatlon-django/templates/emails/notification.txt
+  h_31d152b14e4250 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d38388f84f705f9c42730a6b074d84da2c7e4b3c",
+  "prompts": {},
+  "humans": {
+    "h_31d152b14e4250": {
+      "author": "TURKCELL\\TCALBIRLIK <alper.birlik@turkcell.com.tr>"
+    }
+  }
+}
