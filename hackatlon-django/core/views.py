@@ -245,10 +245,12 @@ def dashboard(request):
     if user.is_manager:
         ctx['team'] = team_with_stats(user)
     if user.has_portal_perm(PermissionType.REPORT_ANALYSIS):
-        task_count = Task.objects.count()
+        # Dağılım, liste ve Excel/PDF ile aynı görünürlük kuralına uyar
+        base = Task.objects.filter(pk__in=visible_tasks(user).values('pk'))
+        task_count = base.count()
         total = task_count or 1
-        sev = dict(Task.objects.values_list('task_severity').annotate(c=Count('id')))
-        sta = dict(Task.objects.values_list('task_status').annotate(c=Count('id')))
+        sev = dict(base.values_list('task_severity').annotate(c=Count('id')))
+        sta = dict(base.values_list('task_status').annotate(c=Count('id')))
         ctx['report'] = {
             'total': task_count,
             'severity': [(k, label, sev.get(k, 0), round(sev.get(k, 0) * 100 / total))
@@ -271,7 +273,10 @@ def task_list(request):
     status = request.GET.get('status')
     severity = request.GET.get('severity')
     overdue = request.GET.get('overdue') == '1'
+    mine = request.GET.get('mine') == '1'
     q = request.GET.get('q', '').strip()
+    if mine:   # dashboard sayılarıyla aynı küme: bana atanan veya benim oluşturduğum
+        qs = qs.filter(pk__in=my_tasks_for(request.user).values('pk'))
     if status:
         qs = qs.filter(task_status=status)
     if severity:
@@ -282,7 +287,7 @@ def task_list(request):
         qs = qs.filter(Q(task_title__icontains=q) | Q(task_description__icontains=q))
     return render(request, 'core/task_list.html', {
         'tasks': qs, 'status_choices': Task.STATUS_CHOICES, 'severity_choices': Task.SEVERITY_CHOICES,
-        'f_status': status, 'f_severity': severity, 'f_overdue': overdue, 'q': q,
+        'f_status': status, 'f_severity': severity, 'f_overdue': overdue, 'f_mine': mine, 'q': q,
         'users': User.objects.filter(is_active=True).order_by('first_name', 'username'),
     })
 
@@ -394,7 +399,7 @@ def task_bulk(request):
         messages.error(request, 'Kişi ekleme/çıkarma için Task Management yetkisi gerekir.')
         return safe_next(request, 'task_list')
 
-    changed = skipped = 0
+    changed = skipped = backup_conflicts = 0
     for task in visible_tasks(user).filter(pk__in=ids).prefetch_related('assignees'):
         if kind == 'status':
             if not can_change_status(user, task):
@@ -407,6 +412,8 @@ def task_bulk(request):
             continue
         if kind == 'severity':
             changed += services.update_task(task, user=user, severity=value)
+        elif kind == 'assign' and task.backup_assignee_id == target.pk:
+            backup_conflicts += 1   # yedek sorumlu aynı zamanda ana sorumlu olamaz (TaskForm kuralı)
         else:
             current = set(task.assignees.all())
             new = current | {target} if kind == 'assign' else current - {target}
@@ -415,7 +422,9 @@ def task_bulk(request):
     msg = f'{changed} taskın {BULK_LABELS[kind]} bilgisi güncellendi.'
     if skipped:
         msg += f' Yetkiniz olmadığı için {skipped} task atlandı.'
-    (messages.warning if skipped else messages.success)(request, msg)
+    if backup_conflicts:
+        msg += f' {target.display_name} yedek sorumlu olduğu için {backup_conflicts} task atlandı.'
+    (messages.warning if skipped or backup_conflicts else messages.success)(request, msg)
     return safe_next(request, 'task_list')
 
 

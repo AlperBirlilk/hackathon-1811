@@ -10,7 +10,7 @@
   <div><div class="value{% if stats.critical %} crit{% endif %}" data-stat="critical">{{ stats.critical }}</div><div class="label">Kritik öncelikli</div></div>
   <div><div class="value" data-stat="done">{{ stats.done }}</div><div class="label">Tamamlanan</div></div>
   <div><div class="value">{{ stats.activities }}</div><div class="label">Yaklaşan etkinlik</div></div>
-  <div><a class="summary-link" href="{% url 'task_list' %}?overdue=1"><div class="value{% if stats.overdue %} crit{% endif %}" data-stat="overdue">{{ stats.overdue }}</div><div class="label">Gecikmiş</div></a></div>
+  <div><a class="summary-link" href="{% url 'task_list' %}?overdue=1&amp;mine=1"><div class="value{% if stats.overdue %} crit{% endif %}" data-stat="overdue">{{ stats.overdue }}</div><div class="label">Gecikmiş</div></a></div>
 </section>
 
 {% if handover %}

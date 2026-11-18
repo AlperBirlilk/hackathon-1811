@@ -24,7 +24,7 @@ Tek doğruluk kaynağı. Endpoint, alan veya yetki kuralı değişiyorsa bu dosy
 // ActivityType: TRAINING (Eğitim) | CONFERENCE (Konferans) | OTHER (Diğer)
 // ParticipationType: INDIVIDUAL (Bireysel) | CORPORATE (Kurumsal)
 // SkillKind: SKILL (Yetenek) | CERTIFICATE (Sertifika)
-// HistoryAction: created | status_change | description_change | assignment_change | severity_change | due_date_change
+// HistoryAction: created | status_change | description_change | assignment_change | severity_change | due_date_change | backup_change
 ```
 
 ## Internal (Django → Java)

@@ -261,8 +261,9 @@ class TaskWorkflowTests(TestCase):
 
     def test_bulk_status_severity_and_assignment(self):
         me = self.login('yonetici')
-        ids = list(Task.objects.values_list('pk', flat=True)[:3])
         mert = User.objects.get(username='mert')
+        # mert'in yedek olduğu task'lar toplu atamada (bilerek) atlanır; onları seçme
+        ids = list(Task.objects.exclude(backup_assignee=mert).values_list('pk', flat=True)[:3])
         self.client.post('/tasks/bulk/', {'ids': ids, 'op': 'status:DONE'})
         self.assertEqual(Task.objects.filter(pk__in=ids, task_status='DONE').count(), 3)
         self.client.post('/tasks/bulk/', {'ids': ids, 'op': 'severity:CRITICAL'})

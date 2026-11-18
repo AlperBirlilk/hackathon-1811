@@ -204,6 +204,8 @@
     };
 
     var moveCard = function (card, lane, before, fromButton) {
+      // Önceki taşıma kaydedilmeden yeni taşıma yok: aksi halde hata durumunda geri alma yanlış sütuna döner
+      if (card.classList.contains('saving')) return;
       var from = card.closest('.lane').dataset.status;
       var to = lane.dataset.status;
       var list = lane.querySelector('.lane-list');

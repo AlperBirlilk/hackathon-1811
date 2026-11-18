@@ -122,3 +122,39 @@ class AssignmentRestrictionTests(TestCase):
         self.task.refresh_from_db()
         self.assertEqual(set(self.task.assignees.all()), {self.mert, self.berkay})
         self.assertEqual(self.task.backup_assignee, self.alper)
+
+
+@override_settings(MAIL_ENABLED=False)
+class ConsistencyTests(TestCase):
+    """Kod incelemesi: dashboard sayıları, rapor dağılımı ve toplu atama tutarlılığı."""
+
+    @classmethod
+    def setUpTestData(cls):
+        call_command('seed', stdout=open(os.devnull, 'w'))
+
+    def setUp(self):
+        cache.clear()
+
+    def test_overdue_tile_matches_linked_list(self):
+        for username in ('alper', 'mert', 'direktor', 'berkay'):
+            with self.subTest(user=username):
+                self.client.login(username=username, password=PW)
+                tile = self.client.get('/').context['stats']['overdue']
+                rows = list(self.client.get('/tasks/?overdue=1&mine=1').context['tasks'])
+                self.assertEqual(tile, len(rows))
+
+    def test_report_distribution_is_scoped(self):
+        from core.views import visible_tasks
+        self.client.login(username='berkay', password=PW)   # REPORT_ANALYSIS, TASK_MANAGEMENT yok
+        report = self.client.get('/').context['report']
+        berkay = User.objects.get(username='berkay')
+        self.assertEqual(report['total'], visible_tasks(berkay).count())
+        self.assertLess(report['total'], Task.objects.count())
+
+    def test_bulk_assign_skips_backup_conflict(self):
+        self.client.login(username='alper', password=PW)   # TASK_MANAGEMENT
+        alper = User.objects.get(username='alper')
+        task = Task.objects.filter(backup_assignee=alper).first()
+        r = self.client.post('/tasks/bulk/', {'ids': [task.pk], 'op': 'assign', 'user': alper.pk}, follow=True)
+        self.assertFalse(task.assignees.filter(pk=alper.pk).exists())
+        self.assertContains(r, 'yedek sorumlu olduğu için')

@@ -16,8 +16,11 @@
       <select name="overdue" data-autosubmit aria-label="Son tarih"><option value="">Tüm son tarihler</option>
         <option value="1" {% if f_overdue %}selected{% endif %}>Gecikmiş</option>
       </select>
+      <select name="mine" data-autosubmit aria-label="Kapsam"><option value="">Görebildiğim tüm işler</option>
+        <option value="1" {% if f_mine %}selected{% endif %}>Benim işlerim</option>
+      </select>
       <button class="btn ghost">Ara</button>
-      {% if q or f_status or f_severity or f_overdue %}<a class="btn ghost" href="{% url 'task_list' %}">Filtreleri temizle</a>{% endif %}
+      {% if q or f_status or f_severity or f_overdue or f_mine %}<a class="btn ghost" href="{% url 'task_list' %}">Filtreleri temizle</a>{% endif %}
     </form>
     <div class="actions">
       {% if perm.report %}
@@ -64,7 +67,7 @@
           <td class="muted" style="white-space:nowrap">{{ t.modified_date|date:"j M, H:i" }}</td>
         </tr>
       {% empty %}
-        <tr><td colspan="7"><div class="empty">{% if q or f_status or f_severity or f_overdue %}Bu filtrelere uyan task yok.{% else %}Henüz task yok. <a href="{% url 'task_create' %}">İlk taskı oluşturun</a>.{% endif %}</div></td></tr>
+        <tr><td colspan="7"><div class="empty">{% if q or f_status or f_severity or f_overdue or f_mine %}Bu filtrelere uyan task yok.{% else %}Henüz task yok. <a href="{% url 'task_create' %}">İlk taskı oluşturun</a>.{% endif %}</div></td></tr>
       {% endfor %}
       </tbody>
     </table>

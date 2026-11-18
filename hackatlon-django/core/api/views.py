@@ -140,9 +140,11 @@ def dashboard(request):
 
     report = None
     if user.has_portal_perm(PermissionType.REPORT_ANALYSIS):
-        total = Task.objects.count() or 1
-        sev = dict(Task.objects.values_list('task_severity').annotate(c=Count('id')))
-        sta = dict(Task.objects.values_list('task_status').annotate(c=Count('id')))
+        # HTML dashboard ile aynı: dağılım görünürlük kuralına göre scope edilir
+        base = Task.objects.filter(pk__in=visible_tasks(user).values('pk'))
+        total = base.count() or 1
+        sev = dict(base.values_list('task_severity').annotate(c=Count('id')))
+        sta = dict(base.values_list('task_status').annotate(c=Count('id')))
         report = {
             'bySeverity': [{'key': k, 'count': sev.get(k, 0), 'percent': round(sev.get(k, 0) * 100 / total)}
                            for k, _ in Task.SEVERITY_CHOICES],
