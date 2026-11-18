@@ -43,10 +43,29 @@ def portal_perm_required(code):
 
 
 def visible_tasks(user):
+    """TASK_MANAGEMENT: tüm task'lar; diğerleri: ana/yedek sorumlusu olduğu veya oluşturduğu task'lar."""
     qs = Task.objects.all()
     if not user.has_portal_perm(PermissionType.TASK_MANAGEMENT):
-        qs = qs.filter(Q(assignees=user) | Q(created_by=user)).distinct()
+        qs = qs.filter(Q(assignees=user) | Q(backup_assignee=user) | Q(created_by=user)).distinct()
     return qs
+
+
+def my_tasks_for(user):
+    """Dashboard 'İşlerim': bana atanan veya benim oluşturduğum task'lar."""
+    return Task.objects.filter(pk__in=Task.objects.filter(Q(assignees=user) | Q(created_by=user)).values('pk'))
+
+
+def handover_tasks_for(user):
+    """Devralınan işler: yedek sorumlusu olduğum, ana sorumlularından biri izinli, tamamlanmamış task'lar."""
+    return Task.objects.filter(pk__in=Task.objects.filter(
+        backup_assignee=user, assignees__is_on_leave=True,
+    ).exclude(task_status=Task.STATUS_DONE).values('pk'))
+
+
+def is_handover(task, user):
+    """Task, bu kullanıcı için yedek sorumlu olarak devralınmış mı (prefetch edilmiş assignees ile çalışır)."""
+    return (task.backup_assignee_id == user.id and task.task_status != Task.STATUS_DONE
+            and any(a.is_on_leave for a in task.assignees.all()))
 
 
 def can_edit_task(user, task):
@@ -54,7 +73,8 @@ def can_edit_task(user, task):
 
 
 def can_change_status(user, task):
-    return can_edit_task(user, task) or task.assignees.filter(pk=user.pk).exists()
+    return (can_edit_task(user, task) or task.backup_assignee_id == user.id
+            or task.assignees.filter(pk=user.pk).exists())
 
 
 def wants_json(request):
@@ -78,15 +98,28 @@ def task_json(task):
     }
 
 
+def team_queryset_for(user):
+    """Ekibim: direktör (tüm yetkiler) herkesi, yönetici kendi ekibini görür."""
+    if user.is_director:
+        return User.objects.filter(is_active=True).exclude(pk=user.pk)
+    return user.team_members.filter(is_active=True)
+
+
 def team_with_stats(manager):
+    now = timezone.now()
     return (
-        manager.team_members.filter(is_active=True)
+        team_queryset_for(manager)
         .annotate(
-            open_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_OPEN)),
-            progress_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_IN_PROGRESS)),
-            done_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_DONE)),
+            open_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_OPEN),
+                             distinct=True),
+            progress_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_IN_PROGRESS),
+                                 distinct=True),
+            done_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status=Task.STATUS_DONE),
+                             distinct=True),
+            overdue_count=Count('assigned_tasks', filter=Q(assigned_tasks__task_status__in=Task.PENDING_STATUSES,
+                                                           assigned_tasks__due_date__lt=now), distinct=True),
         )
-        .order_by('first_name')
+        .order_by('first_name', 'username')
     )
 
 
@@ -142,8 +175,7 @@ def logout_view(request):
 def dashboard(request):
     user = request.user
     # İşlerim: bana atanan veya benim oluşturduğum tasklar
-    my_tasks = Task.objects.filter(
-        pk__in=Task.objects.filter(Q(assignees=user) | Q(created_by=user)).values('pk'))
+    my_tasks = my_tasks_for(user)
     by_priority = my_tasks.annotate(sev_rank=SEVERITY_RANK).order_by('sev_rank', '-modified_date')
     lanes = [
         (Task.STATUS_OPEN, 'Yapılacak', by_priority.filter(task_status=Task.STATUS_OPEN)),
